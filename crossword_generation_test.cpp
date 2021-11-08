@@ -432,10 +432,10 @@ struct candidate_t {
 };
 
 struct generation_t {
-    inline static bool m_generated = false;
-    inline static bool m_canceled = false;
-    inline static board_t m_solution;
-    inline static std::mutex m_mutex;
+    inline static bool s_generated = false;
+    inline static bool s_canceled = false;
+    inline static board_t s_solution;
+    inline static std::mutex s_mutex;
     board_t m_board;
     std::unordered_set<std::string> m_words;
     std::unordered_set<pos_t> m_crossable_x, m_crossable_y;
@@ -566,18 +566,18 @@ struct generation_t {
     }
 
     bool generate_recurse() {
-        if (m_canceled)
+        if (s_canceled)
             return false;
 
-        if (m_generated)
+        if (s_generated)
             return true;
 
         if (m_words.empty()) {
-            std::lock_guard<std::mutex> lock(m_mutex);
-            m_generated = true;
-            m_solution = m_board;
-            m_solution.trim();
-            m_solution.replace('?', '#');
+            std::lock_guard<std::mutex> lock(s_mutex);
+            s_generated = true;
+            s_solution = m_board;
+            s_solution.trim();
+            s_solution.replace('?', '#');
             return true;
         }
 
@@ -656,8 +656,8 @@ struct generation_t {
             return false;
         }
 
-        std::lock_guard<std::mutex> lock(m_mutex);
-        m_solution.print();
+        std::lock_guard<std::mutex> lock(s_mutex);
+        s_solution.print();
         return true;
     }
 
