@@ -57,6 +57,7 @@ int main(int argc, char **argv) {
     typedef char xchar_t;
     //typedef wchar_t xchar_t;
 
+    using namespace crossword_generation;
     board_t<xchar_t>::unittest();
 
     if (argc > 1) {

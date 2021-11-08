@@ -30,16 +30,20 @@
     }
 #endif
 
-typedef std::pair<int, int> pos_t;
+namespace crossword_generation {
+    typedef std::pair<int, int> pos_t;
+} // namespace crossword_generation
 
 namespace std {
     template <>
-    struct hash<pos_t> {
-        size_t operator()(const pos_t& pos) const {
+    struct hash<crossword_generation::pos_t> {
+        size_t operator()(const crossword_generation::pos_t& pos) const {
             return uint16_t(pos.first) | (uint16_t(pos.second) << 16);
         }
     };
-}
+} // namespace std
+
+namespace crossword_generation {
 
 template <typename t_char>
 struct candidate_t {
@@ -907,3 +911,35 @@ check_connectivity(const std::unordered_set<std::basic_string<t_char> >& words) 
 
     return true;
 }
+
+inline bool
+convert_dictionary(std::unordered_set<std::string>& dest, const std::vector<std::wstring>& src) {
+    std::unordered_set<wchar_t> characters;
+    for (auto& word : src) {
+        for (auto& ch : word) {
+            characters.insert(ch);
+        }
+    }
+
+    std::wstring charset(characters.begin(), characters.end());
+
+    // 80 characters:
+    static std::string s_str =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/_-*%=~|&@.<>(){}";
+
+    if (charset.size() > s_str.size())
+        return false;
+
+    for (auto& word : src) {
+        std::string ansi;
+        for (auto& ch : word) {
+            size_t ich = charset.find(ch);
+            ansi += s_str[ich];
+        }
+        dest.insert(ansi);
+    }
+
+    return true;
+}
+
+} // namespace crossword_generation
