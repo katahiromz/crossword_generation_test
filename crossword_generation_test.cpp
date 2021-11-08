@@ -111,7 +111,6 @@ struct board_t : board_data_t {
     void set_on(int x, int y, xchar_t ch) {
         assert(m_x0 <= 0);
         assert(m_y0 <= 0);
-        ensure(x, y);
         set_at(x - m_x0, y - m_y0, ch);
     }
 
@@ -418,6 +417,7 @@ struct board_t : board_data_t {
         b.trim_x();
         b.trim_y();
         assert(b.get_at(0, 0) == 'A');
+        b.ensure(2, 2);
         b.set_on(2, 2, 'A');
         assert(b.get_at(0, 0) == 'A');
         assert(b.get_at(2, 2) == 'A');
