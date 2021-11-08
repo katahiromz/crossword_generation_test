@@ -919,7 +919,9 @@ inline static std::string s_character_mapping =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/_-*%=~|&@.<>(){}";
 
 inline bool
-convert_dictionary(std::wstring& charset, std::unordered_set<std::string>& dest, const std::vector<std::wstring>& src) {
+convert_dictionary(std::wstring& charset, std::unordered_set<std::string>& dest,
+                   const std::vector<std::wstring>& src)
+{
     std::unordered_set<wchar_t> characters;
     for (auto& word : src) {
         for (auto& ch : word) {
