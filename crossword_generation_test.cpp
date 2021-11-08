@@ -23,6 +23,12 @@ namespace std {
 typedef char xchar_t;
 typedef std::basic_string<xchar_t> xstring_t;
 
+struct candidate_t {
+    int m_x = 0, m_y = 0;
+    bool m_vertical = false;
+    xstring_t m_word;
+};
+
 inline bool is_letter(xchar_t ch) {
     return (ch != ' ' && ch != '#' && ch != '?');
 }
@@ -338,6 +344,19 @@ struct board_t : board_data_t {
         return flag1 && flag2;
     }
 
+    void apply_size(const candidate_t& cand) {
+        auto& word = cand.m_word;
+        int x = cand.m_x, y = cand.m_y;
+        if (cand.m_vertical) {
+            ensure(x, y - 1);
+            ensure(x, y + int(word.size()));
+        }
+        else {
+            ensure(x - 1, y);
+            ensure(x + int(word.size()), y);
+        }
+    }
+
     static void unittest() {
         board_t b(3, 3, '#');
         b.insert_x(1, 1, '|');
@@ -426,12 +445,6 @@ struct board_t : board_data_t {
         b.delete_y(0);
         b.m_y0 = 0;
     }
-};
-
-struct candidate_t {
-    int m_x = 0, m_y = 0;
-    bool m_vertical = false;
-    xstring_t m_word;
 };
 
 struct generation_t {
@@ -642,6 +655,18 @@ struct generation_t {
             return false;
         }
 
+        std::sort(candidates.begin(), candidates.end(),
+            [&](const candidate_t& x, const candidate_t& y) {
+                board_t a = m_board;
+                board_t b = m_board;
+                a.apply_size(x);
+                b.apply_size(y);
+                int cxy0 = a.m_cx + a.m_cy;
+                int cxy1 = b.m_cx + b.m_cy;
+                return cxy0 < cxy1;
+            }
+        );
+
         for (auto& cand : candidates) {
             generation_t copy(*this);
             copy.m_crossable_x = crossable_x;
@@ -685,6 +710,36 @@ struct generation_t {
 
 int main(void) {
     board_t::unittest();
-    generation_t::do_generate({"TEST", "EXAMPLE", "TEMPLE", "THIS"});
+    generation_t::do_generate({
+"ABBREVIATION",
+"ABDOMEN",
+"ABILITY",
+"ABOLITION",
+"ABSENCE",
+"ABUSE",
+"ACADEMY",
+"ACCELERATOR",
+"ACCENT",
+"ACCEPTANCE",
+"ACCESS",
+"ACCESSIBILITY",
+"ACCESSORIES",
+"ACCESSORY",
+"ACCIDENT",
+"ACCOMMODATION",
+"ACCOMPLISHMENT",
+"ACCORD",
+"ACCORDION",
+"ACCOUNT",
+"ACCOUNTANT",
+"ACCOUNTS",
+"ACCURACY",
+"ACHIEVEMENT",
+"ACID",
+"ACKNOWLEDGMENTS",
+"ACQUAINTANCE",
+"ACRE",
+"ACRES",
+        });
     return 0;
 }
