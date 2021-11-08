@@ -17,7 +17,7 @@ namespace std {
     template <>
     struct hash<pos_t> {
         size_t operator()(const pos_t& pos) const {
-            return pos.first ^ (pos.second * 128);
+            return uint16_t(pos.first) | (uint16_t(pos.second) << 16);
         }
     };
 }
