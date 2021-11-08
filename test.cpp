@@ -63,7 +63,9 @@ int main(void) {
 #endif
         });
         if (generation_t<xchar_t>::s_generated) {
+            generation_t<xchar_t>::s_mutex.lock();
             generation_t<xchar_t>::s_solution.print();
+            generation_t<xchar_t>::s_mutex.unlock();
             break;
         } else {
             std::printf("failed\n");
