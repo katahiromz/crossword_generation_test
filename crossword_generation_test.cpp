@@ -450,8 +450,9 @@ struct board_t : board_data_t {
 struct generation_t {
     inline static bool s_generated = false;
     inline static bool s_canceled = false;
-    inline static board_t s_solution;
+    inline static std::vector<board_t> s_solutions;
     inline static std::mutex s_mutex;
+    inline static size_t s_count = 1;
     board_t m_board;
     std::unordered_set<xstring_t> m_words, m_dict;
     std::unordered_set<pos_t> m_crossable_x, m_crossable_y;
@@ -610,8 +611,8 @@ struct generation_t {
         if (s_canceled)
             return false;
 
-        //if (s_generated)
-        //    return true;
+        if (s_generated && s_solutions.size() >= s_count)
+            return true;
 
         if (m_crossable_x.empty() && m_crossable_y.empty())
             return false;
@@ -651,20 +652,12 @@ struct generation_t {
                 board0.replace('?', '#');
                 if (is_solution(board0)) {
                     std::lock_guard<std::mutex> lock(s_mutex);
-                    if (s_generated) {
-                        int cxy0 = board0.m_cx + board0.m_cy;
-                        int cxy1 = s_solution.m_cx + s_solution.m_cy;
-                        if (cxy0 < cxy1) {
-                            s_solution = board0;
-                        }
-                    } else {
-                        s_generated = true;
-                        s_solution = board0;
-                    }
+                    s_generated = true;
+                    s_solutions.push_back(board0);
                     return true;
                 }
             }
-            return false;
+            return s_generated;
         }
 
         std::sort(candidates.begin(), candidates.end(),
@@ -673,8 +666,8 @@ struct generation_t {
                 board_t b = m_board;
                 a.apply_size(x);
                 b.apply_size(y);
-                int cxy0 = a.m_cx + a.m_cy;
-                int cxy1 = b.m_cx + b.m_cy;
+                int cxy0 = (a.m_cx + a.m_cy) * (a.m_cx - a.m_cy);
+                int cxy1 = (b.m_cx + b.m_cy) * (b.m_cx - b.m_cy);
                 return cxy0 < cxy1;
             }
         );
@@ -682,7 +675,7 @@ struct generation_t {
         for (auto& cand : candidates) {
             generation_t copy(*this);
             copy.apply_candidate(cand);
-            if (copy.generate_recurse())
+            if (copy.generate_recurse() && s_count <= s_solutions.size())
                 return true;
         }
 
@@ -691,6 +684,9 @@ struct generation_t {
 
     bool generate() {
         auto words = m_words;
+        if (words.empty())
+            return false;
+
         for (auto& word : m_words) {
             if (word.size() <= 1) {
                 words.erase(word);
@@ -707,7 +703,15 @@ struct generation_t {
             return false;
 
         std::lock_guard<std::mutex> lock(s_mutex);
-        s_solution.print();
+        board_t board0 = s_solutions[0];
+        for (auto& solution : s_solutions) {
+            int cxy0 = (board0.m_cx + board0.m_cy) * (board0.m_cx - board0.m_cy);
+            int cxy1 = (solution.m_cx + solution.m_cy) * (solution.m_cx - solution.m_cy);
+            if (cxy0 > cxy1) {
+                board0 = solution;
+            }
+        }
+        board0.print();
         return true;
     }
 
@@ -783,17 +787,90 @@ struct generation_t {
 int main(void) {
     board_t::unittest();
     generation_t::do_generate({
-"WE",
-"WEAKNESS",
-"WEALTH",
-"WEAPON",
-"WEAR",
-"WEATHER",
-"WEB",
-"WEBCAM",
-"WEBSITE",
-"WED",
-"WEDDING",
+"SIBLING",
+"SICKNESS",
+"SIDE",
+"SIDEBAR",
+"SIDEWALK",
+"SIEGE",
+"SIEVE",
+"SIGH",
+"SIGHT",
+"SIGHTSEEING",
+"SIGN",
+"SIGNAL",
+"SIGNATURE",
+"SIGNIFICANCE",
+"SIKH",
+"SILENCE",
+"SILHOUETTE",
+"SILK",
+"SILVER",
+"SIM",
+"SIMILARITY",
+"SIMILE",
+"SIMPLICITY",
+"SIN",
+"SINGER",
+"SINGULAR",
+"SINK",
+"SIP",
+"SIR",
+"SIREN",
+"SISTER",
+"SITE",
+"SITUATION",
+"SIX",
+"SIXTEEN",
+"SIXTY",
+"SIZE",
+"SKATE",
+"SKATEBOARD",
+"SKATEPARK",
+"SKELETON",
+"SKETCH",
+"SKI",
+"SKIER",
+"SKIING",
+"SKILL",
+"SKIN",
+"SKIRT",
+"SKULL",
+"SKY",
+"SKYPE",
+"SKYSCRAPER",
+"SLAB",
+"SLANG",
+"SLASH",
+"SLAUGHTER",
+"SLAVE",
+"SLEDGE",
+"SLEEP",
+"SLEET",
+"SLEEVE",
+"SLICE",
+"SLIDE",
+"SLIME",
+"SLING",
+"SLIP",
+"SLIPPER",
+"SLOGAN",
+"SLOPE",
+"SLOT",
+"SLUG",
+"SLUM",
+"SLUMP",
+"SMARTPHONE",
+"SMELL",
+"SMILE",
+"SMOKE",
+"SMOOTHIE",
+"SMUDGE",
+"SMUGGLER",
+"SNACK",
+"SNAG",
+"SNAIL",
+"SNAKE",
         });
     return 0;
 }
