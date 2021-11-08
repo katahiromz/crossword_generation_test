@@ -10,7 +10,6 @@ int main(void) {
     for (int i = 0; i < RETRY_COUNT; ++i)
     {
         generation_t<xchar_t>::do_generate_multithread({
-#if 1
 "ABBREVIATION",
 "ABDOMEN",
 "ABILITY",
@@ -40,7 +39,6 @@ int main(void) {
 "ACQUAINTANCE",
 "ACRE",
 "ACRES",
-#else
 "USING",
 "WHICH",
 "SUPPORT",
@@ -60,7 +58,6 @@ int main(void) {
 "GLOBAL",
 "SETTING",
 "WORK",
-#endif
         });
         if (generation_t<xchar_t>::s_generated) {
             generation_t<xchar_t>::s_mutex.lock();
