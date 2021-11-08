@@ -639,22 +639,10 @@ struct generation_t {
             return false;
 
         auto word = *words.begin();
-        auto& board = m_board;
-        board = { int(word.size()) + 2, 1, '?' };
-        board.set_on(0, 0, '#');
-        for (int x = 0, y = 0, cx = int(word.size()); x < cx; ++x) {
-            board.set_on(x + 1, y, word[x]);
-            m_crossable_y.emplace(x + 1, y);
-        }
-        board.set_on(1 + int(word.size()), 0, '#');
-        board.print();
-
-        m_words = std::move(words);
-        m_words.erase(word);
-
-        if (!generate_recurse()) {
+        candidate_t cand = { 0, 0, false, word };
+        apply_candidate(cand);
+        if (!generate_recurse())
             return false;
-        }
 
         std::lock_guard<std::mutex> lock(s_mutex);
         s_solution.print();
