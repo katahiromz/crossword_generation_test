@@ -397,6 +397,7 @@ struct board_t : board_data_t<t_char> {
     }
 
     static void unittest() {
+#ifndef NDEBUG
         board_t<t_char> b(3, 3, '#');
         b.insert_x(1, 1, '|');
         assert(b.get_at(0, 0) == '#');
@@ -484,6 +485,7 @@ struct board_t : board_data_t<t_char> {
         assert(b.get_on(0, 2) == '?');
         b.delete_y(0);
         b.m_y0 = 0;
+#endif
     }
 };
 
