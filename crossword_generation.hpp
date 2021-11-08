@@ -938,6 +938,7 @@ convert_dictionary(std::wstring& charset, std::unordered_set<std::string>& dest,
         std::string ansi;
         for (auto& ch : word) {
             size_t ich = charset.find(ch);
+            assert(ich != charset.npos);
             ansi += s_character_mapping[ich];
         }
         dest.insert(ansi);
