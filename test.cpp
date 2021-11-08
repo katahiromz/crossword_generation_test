@@ -67,20 +67,22 @@ int main(int argc, char **argv) {
     }
 
     auto t0 = std::time(NULL);
-    const int RETRY_COUNT = 3;
-    for (int i = 0; i < RETRY_COUNT; ++i)
     {
-        generation_t<xchar_t>::do_generate_mt(s_words);
-        if (generation_t<xchar_t>::s_generated) {
-            generation_t<xchar_t>::s_mutex.lock();
-            generation_t<xchar_t>::s_solution.print();
-            generation_t<xchar_t>::s_mutex.unlock();
-            break;
-        } else {
-            std::printf("failed\n");
+        const int RETRY_COUNT = 3;
+        for (int i = 0; i < RETRY_COUNT; ++i) {
+            generation_t<xchar_t>::do_generate_mt(s_words);
+            if (generation_t<xchar_t>::s_generated) {
+                generation_t<xchar_t>::s_mutex.lock();
+                generation_t<xchar_t>::s_solution.print();
+                generation_t<xchar_t>::s_mutex.unlock();
+                break;
+            } else {
+                std::printf("failed\n");
+            }
         }
     }
     auto t1 = std::time(NULL);
     printf("%u\n", int(t1 - t0));
+
     return 0;
 }
