@@ -1,66 +1,69 @@
 #include "crossword_generation.hpp"
 
 int main(void) {
-    board_t<wchar_t>::unittest();
+    typedef char xchar_t;
+    //typedef wchar_t xchar_t;
+
+    board_t<xchar_t>::unittest();
     auto t0 = std::time(NULL);
     const int RETRY_COUNT = 3;
     for (int i = 0; i < RETRY_COUNT; ++i)
     {
-        generation_t<wchar_t>::do_generate_multithread({
-#if 0
-L"ABBREVIATION",
-L"ABDOMEN",
-L"ABILITY",
-L"ABOLITION",
-L"ABSENCE",
-L"ABUSE",
-L"ACADEMY",
-L"ACCELERATOR",
-L"ACCENT",
-L"ACCEPTANCE",
-L"ACCESS",
-L"ACCESSIBILITY",
-L"ACCESSORIES",
-L"ACCESSORY",
-L"ACCIDENT",
-L"ACCOMMODATION",
-L"ACCOMPLISHMENT",
-L"ACCORD",
-L"ACCORDION",
-L"ACCOUNT",
-L"ACCOUNTANT",
-L"ACCOUNTS",
-L"ACCURACY",
-L"ACHIEVEMENT",
-L"ACID",
-L"ACKNOWLEDGMENTS",
-L"ACQUAINTANCE",
-L"ACRE",
-L"ACRES",
+        generation_t<xchar_t>::do_generate_multithread({
+#if 1
+"ABBREVIATION",
+"ABDOMEN",
+"ABILITY",
+"ABOLITION",
+"ABSENCE",
+"ABUSE",
+"ACADEMY",
+"ACCELERATOR",
+"ACCENT",
+"ACCEPTANCE",
+"ACCESS",
+"ACCESSIBILITY",
+"ACCESSORIES",
+"ACCESSORY",
+"ACCIDENT",
+"ACCOMMODATION",
+"ACCOMPLISHMENT",
+"ACCORD",
+"ACCORDION",
+"ACCOUNT",
+"ACCOUNTANT",
+"ACCOUNTS",
+"ACCURACY",
+"ACHIEVEMENT",
+"ACID",
+"ACKNOWLEDGMENTS",
+"ACQUAINTANCE",
+"ACRE",
+"ACRES",
 #else
-L"USING",
-L"WHICH",
-L"SUPPORT",
-L"INTEGRATED",
-L"CMAKE",
-L"HOW",
-L"CAN",
-L"TARGET",
-L"WITHOUT",
-L"WRITING",
-L"FLAGS",
-L"FOR",
-L"EACH",
-L"SPECIFIC",
-L"COMPILERS",
-L"CURRENT",
-L"GLOBAL",
-L"SETTING",
-L"WORK",
+"USING",
+"WHICH",
+"SUPPORT",
+"INTEGRATED",
+"CMAKE",
+"HOW",
+"CAN",
+"TARGET",
+"WITHOUT",
+"WRITING",
+"FLAGS",
+"FOR",
+"EACH",
+"SPECIFIC",
+"COMPILERS",
+"CURRENT",
+"GLOBAL",
+"SETTING",
+"WORK",
 #endif
         });
-        if (generation_t<wchar_t>::s_generated) {
-            generation_t<wchar_t>::s_solution.print();
+        if (generation_t<xchar_t>::s_generated) {
+            generation_t<xchar_t>::s_solution.print();
             break;
         } else {
             std::printf("failed\n");

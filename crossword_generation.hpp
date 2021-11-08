@@ -795,7 +795,7 @@ struct generation_t {
 
     static bool do_generate_multithread(const std::unordered_set<t_string>& words) {
         auto num_threads = get_num_processors();
-        printf("num_threads: %d\n", int(num_threads));
+        //printf("num_threads: %d\n", int(num_threads));
         const int RETRY_COUNT = 3;
 
         s_count = 0;
