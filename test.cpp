@@ -3,7 +3,10 @@
 int main(void) {
     board_t<wchar_t>::unittest();
     auto t0 = std::time(NULL);
-    generation_t<wchar_t>::do_generate({
+    const int RETRY_COUNT = 3;
+    for (int i = 0; i < RETRY_COUNT; ++i)
+    {
+        generation_t<wchar_t>::do_generate_multithread({
 #if 0
 L"ABBREVIATION",
 L"ABDOMEN",
@@ -56,6 +59,13 @@ L"SETTING",
 L"WORK",
 #endif
         });
+        if (generation_t<wchar_t>::s_generated) {
+            generation_t<wchar_t>::s_solution.print();
+            break;
+        } else {
+            std::printf("failed\n");
+        }
+    }
     auto t1 = std::time(NULL);
     printf("%u\n", int(t1 - t0));
     return 0;

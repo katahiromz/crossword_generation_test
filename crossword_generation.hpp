@@ -10,6 +10,8 @@
 #include <mutex>
 #include <algorithm>
 #include <utility>
+#include <sstream>
+#include <windows.h>
 
 typedef std::pair<int, int> pos_t;
 
@@ -33,6 +35,12 @@ struct candidate_t {
 template <typename t_char>
 inline bool is_letter(t_char ch) {
     return (ch != ' ' && ch != '#' && ch != '?');
+}
+
+inline uint32_t get_num_processors(void) {
+    SYSTEM_INFO info;
+    ::GetSystemInfo(&info);
+    return info.dwNumberOfProcessors;
 }
 
 template <typename t_char>
@@ -460,6 +468,7 @@ struct generation_t {
 
     inline static bool s_generated = false;
     inline static bool s_canceled = false;
+    inline static int s_count = 0;
     inline static board_t<t_char> s_solution;
     inline static std::mutex s_mutex;
     board_t<t_char> m_board;
@@ -669,6 +678,8 @@ struct generation_t {
             return s_generated;
         }
 
+        std::random_shuffle(candidates.begin(), candidates.end());
+
         for (auto& cand : candidates) {
             generation_t<t_char> copy(*this);
             copy.apply_candidate(cand);
@@ -700,7 +711,6 @@ struct generation_t {
             return false;
 
         std::lock_guard<std::mutex> lock(s_mutex);
-        s_solution.print();
         return true;
     }
 
@@ -769,6 +779,56 @@ struct generation_t {
     static bool do_generate(const std::unordered_set<t_string>& words) {
         generation_t<t_char> data;
         data.m_words = data.m_dict = words;
-        return data.generate();
+        bool flag = data.generate();
+        ++s_count;
+        return flag;
+    }
+
+    static bool do_generate_proc(const void *arg) {
+        std::srand(::GetTickCount() ^ ::GetCurrentThreadId());
+        ::SetThreadPriority(::GetCurrentThread(), THREAD_PRIORITY_ABOVE_NORMAL);
+        auto words = reinterpret_cast<const std::unordered_set<t_string>*>(arg);
+        bool flag = do_generate(*words);
+        delete words;
+        return flag;
+    }
+
+    static bool do_generate_multithread(const std::unordered_set<t_string>& words) {
+        auto num_threads = get_num_processors();
+        printf("num_threads: %d\n", int(num_threads));
+        const int RETRY_COUNT = 3;
+
+        s_count = 0;
+        for (size_t i = 0; i < num_threads; ++i) {
+            auto clone = new std::unordered_set<t_string>(words);
+            try {
+                std::thread t(do_generate_proc, clone);
+                t.detach();
+            } catch (std::system_error& e) {
+                delete clone;
+                s_count++;
+            }
+        }
+
+        ::SetThreadPriority(::GetCurrentThread(), THREAD_PRIORITY_BELOW_NORMAL);
+
+        for (size_t i = 0; i < RETRY_COUNT; ++i) {
+            if (s_generated || s_canceled)
+                break;
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+
+        if (!s_generated)
+            s_canceled = true;
+
+        for (size_t i = 0; i < RETRY_COUNT; ++i) {
+            if (s_count >= num_threads)
+                break;
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+
+        ::SetThreadPriority(::GetCurrentThread(), THREAD_PRIORITY_NORMAL);
+
+        return s_generated;
     }
 };
