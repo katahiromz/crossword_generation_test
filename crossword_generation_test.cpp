@@ -74,7 +74,7 @@ struct board_t : board_data_t {
         if (x < m_x0) {
             grow_x0(m_x0 - x, '?');
         } else if (m_cx + m_x0 <= x) {
-            grow_x1(x - (m_cy + m_y0) + 1, '?');
+            grow_x1(x - (m_cx + m_x0) + 1, '?');
         }
     }
     // y: relative coordinate
@@ -304,6 +304,37 @@ struct board_t : board_data_t {
         std::fflush(stdout);
     }
 
+    bool is_crossable_x(int x, int y) const {
+        assert(is_letter(get_on(x, y)));
+        uint8_t ch1, ch2;
+        ch1 = get_on(x - 1, y);
+        ch2 = get_on(x + 1, y);
+        if (ch1 == '?' || ch2 == '?')
+            return true;
+        return false;
+    }
+    bool is_crossable_y(int x, int y) const {
+        assert(is_letter(get_on(x, y)));
+        uint8_t ch1, ch2;
+        ch1 = get_on(x, y - 1);
+        ch2 = get_on(x, y + 1);
+        if (ch1 == '?' || ch2 == '?')
+            return true;
+        return false;
+    }
+
+    bool must_be_cross(int x, int y) const {
+        assert(is_letter(get_on(x, y)));
+        uint8_t ch1, ch2;
+        ch1 = get_on(x - 1, y);
+        ch2 = get_on(x + 1, y);
+        bool flag1 = (is_letter(ch1) || is_letter(ch2));
+        ch1 = get_on(x, y - 1);
+        ch2 = get_on(x, y + 1);
+        bool flag2 = (is_letter(ch1) || is_letter(ch2));
+        return flag1 && flag2;
+    }
+
     static void unittest() {
         board_t b(3, 3, '#');
         b.insert_x(1, 1, '|');
@@ -414,15 +445,25 @@ std::mutex g_mutex;
 void apply_candidate(generation_data_t& data, const candidate_t& cand) {
     auto& pat = cand.m_pat;
     int x = cand.m_x, y = cand.m_y;
+    data.m_board.print();
     if (cand.m_vertical) {
         for (size_t ich = 0; ich < pat.size(); ++ich) {
             data.m_board.set_on(x, y + int(ich), pat[ich]);
+            if (is_letter(pat[ich])) {
+                if (data.m_board.is_crossable_x(x, y + int(ich)))
+                    data.m_crossable_x.insert({ x, y + int(ich) });
+            }
         }
     } else {
         for (size_t ich = 0; ich < pat.size(); ++ich) {
             data.m_board.set_on(x + int(ich), y, pat[ich]);
+            if (is_letter(pat[ich])) {
+                if (data.m_board.is_crossable_y(x + int(ich), y))
+                    data.m_crossable_y.insert({ x + int(ich), y });
+            }
         }
     }
+    data.m_board.print();
     data.m_words.erase(cand.m_word);
 }
 
@@ -431,8 +472,10 @@ get_candidates_x(const generation_data_t& data, int x, int y) {
     auto& board = data.m_board;
     std::vector<candidate_t> cands;
 
+    uint8_t ch0 = board.get_on(x, y);
+    assert(is_letter(ch0));
+
     for (auto& word : data.m_words) {
-        uint8_t ch0 = board.get_on(x, y);
         for (size_t ich = 0; ich < word.size(); ++ich) {
             if (word[ich] != ch0)
                 continue;
@@ -459,9 +502,19 @@ get_candidates_x(const generation_data_t& data, int x, int y) {
                 }
             }
             if (matched) {
-                cands.push_back({x0 - 1, y, true, '#' + word + '#', word});
+                cands.push_back({x0 - 1, y, false, '#' + word + '#', word});
             }
         }
+    }
+
+    uint8_t ch1 = board.get_on(x - 1, y);
+    uint8_t ch2 = board.get_on(x + 1, y);
+    if (!is_letter(ch1) && !is_letter(ch2)) {
+        std::string str = "#";
+        str += ch0;
+        str += '#';
+        char sz[2] = { char(ch0), 0 };
+        cands.push_back({ x - 1, y, false, str, sz });
     }
 
     return cands;
@@ -472,8 +525,10 @@ get_candidates_y(const generation_data_t& data, int x, int y) {
     auto& board = data.m_board;
     std::vector<candidate_t> cands;
 
+    uint8_t ch0 = board.get_on(x, y);
+    assert(is_letter(ch0));
+
     for (auto& word : data.m_words) {
-        uint8_t ch0 = board.get_on(x, y);
         for (size_t ich = 0; ich < word.size(); ++ich) {
             if (word[ich] != ch0)
                 continue;
@@ -503,6 +558,16 @@ get_candidates_y(const generation_data_t& data, int x, int y) {
                 cands.push_back({x, y0 - 1, true, '#' + word + '#', word});
             }
         }
+    }
+
+    uint8_t ch1 = board.get_on(x, y - 1);
+    uint8_t ch2 = board.get_on(x, y + 1);
+    if (!is_letter(ch1) && !is_letter(ch2)) {
+        std::string str = "#";
+        str += ch0;
+        str += '#';
+        char sz[2] = { char(ch0), 0 };
+        cands.push_back({ x, y - 1, true, str, sz });
     }
 
     return cands;
@@ -538,19 +603,23 @@ bool generate_recurse(const generation_data_t& data) {
     for (auto& cross : new_data.m_crossable_x) {
         auto cands = get_candidates_x(new_data, cross.first, cross.second);
         if (cands.empty()) {
-            crossable_x.erase(cross);
+            if (new_data.m_board.must_be_cross(cross.first, cross.second))
+                return false;
         } else {
             candidates.insert(candidates.end(), cands.begin(), cands.end());
         }
+        crossable_x.erase(cross);
     }
 
     for (auto& cross : new_data.m_crossable_y) {
         auto cands = get_candidates_y(new_data, cross.first, cross.second);
         if (cands.empty()) {
-            crossable_y.erase(cross);
+            if (new_data.m_board.must_be_cross(cross.first, cross.second))
+                return false;
         } else {
             candidates.insert(candidates.end(), cands.begin(), cands.end());
         }
+        crossable_y.erase(cross);
     }
 
     new_data.m_crossable_x = std::move(crossable_x);
@@ -586,6 +655,7 @@ bool generate(generation_data_t& data) {
         data.m_crossable_y.emplace(x + 1, y);
     }
     board.set_on(1 + int(word.size()), 0, '#');
+    board.print();
 
     data.m_words = std::move(words);
     data.m_words.erase(word);
