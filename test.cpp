@@ -1,17 +1,6 @@
 #include "crossword_generation.hpp"
 
-int main(void) {
-    std::srand(::GetTickCount() ^ ::GetCurrentThreadId());
-
-    typedef char xchar_t;
-    //typedef wchar_t xchar_t;
-
-    board_t<xchar_t>::unittest();
-    auto t0 = std::time(NULL);
-    const int RETRY_COUNT = 3;
-    for (int i = 0; i < RETRY_COUNT; ++i)
-    {
-        generation_t<xchar_t>::do_generate_mt({
+std::unordered_set<std::string> s_words = {
 "ABBREVIATION",
 "ABDOMEN",
 "ABILITY",
@@ -60,7 +49,28 @@ int main(void) {
 "GLOBAL",
 "SETTING",
 "WORK",
-        });
+};
+
+int main(int argc, char **argv) {
+    std::srand(::GetTickCount() ^ ::GetCurrentThreadId());
+
+    typedef char xchar_t;
+    //typedef wchar_t xchar_t;
+
+    board_t<xchar_t>::unittest();
+
+    if (argc > 1) {
+        s_words.clear();
+        for (int iarg = 1; iarg < argc; ++iarg) {
+            s_words.insert(argv[iarg]);
+        }
+    }
+
+    auto t0 = std::time(NULL);
+    const int RETRY_COUNT = 3;
+    for (int i = 0; i < RETRY_COUNT; ++i)
+    {
+        generation_t<xchar_t>::do_generate_mt(s_words);
         if (generation_t<xchar_t>::s_generated) {
             generation_t<xchar_t>::s_mutex.lock();
             generation_t<xchar_t>::s_solution.print();
