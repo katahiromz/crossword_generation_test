@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <cstdint>
+#include <ctime>
 #include <cassert>
 #include <vector>
 #include <unordered_set>
@@ -450,9 +451,8 @@ struct board_t : board_data_t {
 struct generation_t {
     inline static bool s_generated = false;
     inline static bool s_canceled = false;
-    inline static std::vector<board_t> s_solutions;
+    inline static board_t s_solution;
     inline static std::mutex s_mutex;
-    inline static size_t s_count = 1;
     board_t m_board;
     std::unordered_set<xstring_t> m_words, m_dict;
     std::unordered_set<pos_t> m_crossable_x, m_crossable_y;
@@ -611,7 +611,7 @@ struct generation_t {
         if (s_canceled)
             return false;
 
-        if (s_generated && s_solutions.size() >= s_count)
+        if (s_generated)
             return true;
 
         if (m_crossable_x.empty() && m_crossable_y.empty())
@@ -653,7 +653,7 @@ struct generation_t {
                 if (is_solution(board0)) {
                     std::lock_guard<std::mutex> lock(s_mutex);
                     s_generated = true;
-                    s_solutions.push_back(board0);
+                    s_solution = board0;
                     return true;
                 }
             }
@@ -675,7 +675,7 @@ struct generation_t {
         for (auto& cand : candidates) {
             generation_t copy(*this);
             copy.apply_candidate(cand);
-            if (copy.generate_recurse() && s_count <= s_solutions.size())
+            if (copy.generate_recurse())
                 return true;
         }
 
@@ -703,15 +703,7 @@ struct generation_t {
             return false;
 
         std::lock_guard<std::mutex> lock(s_mutex);
-        board_t board0 = s_solutions[0];
-        for (auto& solution : s_solutions) {
-            int cxy0 = (board0.m_cx + board0.m_cy) * (board0.m_cx - board0.m_cy);
-            int cxy1 = (solution.m_cx + solution.m_cy) * (solution.m_cx - solution.m_cy);
-            if (cxy0 > cxy1) {
-                board0 = solution;
-            }
-        }
-        board0.print();
+        s_solution.print();
         return true;
     }
 
@@ -786,91 +778,39 @@ struct generation_t {
 
 int main(void) {
     board_t::unittest();
+    auto t0 = std::time(NULL);
     generation_t::do_generate({
-"SIBLING",
-"SICKNESS",
-"SIDE",
-"SIDEBAR",
-"SIDEWALK",
-"SIEGE",
-"SIEVE",
-"SIGH",
-"SIGHT",
-"SIGHTSEEING",
-"SIGN",
-"SIGNAL",
-"SIGNATURE",
-"SIGNIFICANCE",
-"SIKH",
-"SILENCE",
-"SILHOUETTE",
-"SILK",
-"SILVER",
-"SIM",
-"SIMILARITY",
-"SIMILE",
-"SIMPLICITY",
-"SIN",
-"SINGER",
-"SINGULAR",
-"SINK",
-"SIP",
-"SIR",
-"SIREN",
-"SISTER",
-"SITE",
-"SITUATION",
-"SIX",
-"SIXTEEN",
-"SIXTY",
-"SIZE",
-"SKATE",
-"SKATEBOARD",
-"SKATEPARK",
-"SKELETON",
-"SKETCH",
-"SKI",
-"SKIER",
-"SKIING",
-"SKILL",
-"SKIN",
-"SKIRT",
-"SKULL",
-"SKY",
-"SKYPE",
-"SKYSCRAPER",
-"SLAB",
-"SLANG",
-"SLASH",
-"SLAUGHTER",
-"SLAVE",
-"SLEDGE",
-"SLEEP",
-"SLEET",
-"SLEEVE",
-"SLICE",
-"SLIDE",
-"SLIME",
-"SLING",
-"SLIP",
-"SLIPPER",
-"SLOGAN",
-"SLOPE",
-"SLOT",
-"SLUG",
-"SLUM",
-"SLUMP",
-"SMARTPHONE",
-"SMELL",
-"SMILE",
-"SMOKE",
-"SMOOTHIE",
-"SMUDGE",
-"SMUGGLER",
-"SNACK",
-"SNAG",
-"SNAIL",
-"SNAKE",
+"ABBREVIATION",
+"ABDOMEN",
+"ABILITY",
+"ABOLITION",
+"ABSENCE",
+"ABUSE",
+"ACADEMY",
+"ACCELERATOR",
+"ACCENT",
+"ACCEPTANCE",
+"ACCESS",
+"ACCESSIBILITY",
+"ACCESSORIES",
+"ACCESSORY",
+"ACCIDENT",
+"ACCOMMODATION",
+"ACCOMPLISHMENT",
+"ACCORD",
+"ACCORDION",
+"ACCOUNT",
+"ACCOUNTANT",
+"ACCOUNTS",
+"ACCURACY",
+"ACHIEVEMENT",
+"ACID",
+"ACKNOWLEDGMENTS",
+"ACQUAINTANCE",
+"ACRE",
+"ACRES",
         });
+    auto t1 = std::time(NULL);
+    printf("%u\n", int(t1 - t0));
     return 0;
 }
