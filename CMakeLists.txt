@@ -9,7 +9,10 @@ cmake_minimum_required(VERSION 3.0)
 # project name and languages
 project(crossword_generation_test CXX)
 
-# crossword_generation_test.exe
-add_executable(crossword_generation_test crossword_generation_test.cpp)
+# C++17
+set(CMAKE_CXX_STANDARD 17)
+
+# test.exe
+add_executable(test test.cpp)
 
 ##############################################################################
