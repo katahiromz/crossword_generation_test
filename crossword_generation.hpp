@@ -914,8 +914,12 @@ check_connectivity(const std::unordered_set<std::basic_string<t_char> >& words) 
     return true;
 }
 
+// 80 characters:
+inline static std::string s_character_mapping =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/_-*%=~|&@.<>(){}";
+
 inline bool
-convert_dictionary(std::unordered_set<std::string>& dest, const std::vector<std::wstring>& src) {
+convert_dictionary(std::wstring& charset, std::unordered_set<std::string>& dest, const std::vector<std::wstring>& src) {
     std::unordered_set<wchar_t> characters;
     for (auto& word : src) {
         for (auto& ch : word) {
@@ -923,20 +927,16 @@ convert_dictionary(std::unordered_set<std::string>& dest, const std::vector<std:
         }
     }
 
-    std::wstring charset(characters.begin(), characters.end());
+    charset.assign(characters.begin(), characters.end());
 
-    // 80 characters:
-    static std::string s_str =
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/_-*%=~|&@.<>(){}";
-
-    if (charset.size() > s_str.size())
+    if (charset.size() > s_character_mapping.size())
         return false;
 
     for (auto& word : src) {
         std::string ansi;
         for (auto& ch : word) {
             size_t ich = charset.find(ch);
-            ansi += s_str[ich];
+            ansi += s_character_mapping[ich];
         }
         dest.insert(ansi);
     }
