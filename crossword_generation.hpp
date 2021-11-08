@@ -22,61 +22,66 @@ namespace std {
     };
 }
 
-typedef char xchar_t;
-typedef std::basic_string<xchar_t> xstring_t;
-
+template <typename t_char>
 struct candidate_t {
+    typedef std::basic_string<t_char> t_string;
     int m_x = 0, m_y = 0;
     bool m_vertical = false;
-    xstring_t m_word;
+    t_string m_word;
 };
 
-inline bool is_letter(xchar_t ch) {
+template <typename t_char>
+inline bool is_letter(t_char ch) {
     return (ch != ' ' && ch != '#' && ch != '?');
 }
 
+template <typename t_char>
 struct board_data_t {
-    std::basic_string<xchar_t> m_data;
+    typedef std::basic_string<t_char> t_string;
+    t_string m_data;
 
-    board_data_t(int cx = 1, int cy = 1, xchar_t ch = ' ') {
+    board_data_t(int cx = 1, int cy = 1, t_char ch = ' ') {
         allocate(cx, cy, ch);
     }
 
-    void allocate(int cx, int cy, xchar_t ch = ' ') {
+    void allocate(int cx, int cy, t_char ch = ' ') {
         m_data.assign(cx * cy, ch);
     }
 
-    void fill(xchar_t ch = ' ') {
+    void fill(t_char ch = ' ') {
         std::fill(m_data.begin(), m_data.end(), ch);
     }
 
-    void replace(xchar_t chOld, xchar_t chNew) {
+    void replace(t_char chOld, t_char chNew) {
         std::replace(m_data.begin(), m_data.end(), chOld, chNew);
     }
 };
 
-struct board_t : board_data_t {
+template <typename t_char>
+struct board_t : board_data_t<t_char> {
+    typedef std::basic_string<t_char> t_string;
+
     int m_x0 = 0, m_y0 = 0;
     int m_cx = 0, m_cy = 0;
 
-    board_t(int cx = 1, int cy = 1, xchar_t ch = ' ', int x0 = 0, int y0 = 0)
-        : board_data_t(cx, cy, ch), m_cx(cx), m_cy(cy), m_x0(x0), m_y0(y0)
+    board_t(int cx = 1, int cy = 1, t_char ch = ' ', int x0 = 0, int y0 = 0)
+        : board_data_t<t_char>(cx, cy, ch), m_cx(cx), m_cy(cy), m_x0(x0), m_y0(y0)
     {
     }
-    board_t(const board_t& b) = default;
-    board_t& operator=(const board_t& b) = default;
+    board_t(const board_t<t_char>& b) = default;
+    board_t<t_char>& operator=(const board_t<t_char>& b) = default;
 
     // x, y: absolute coordinate
-    xchar_t get_at(int x, int y) const {
+    t_char get_at(int x, int y) const {
         if (0 <= x && x < m_cx && 0 <= y && y < m_cy) {
-            return m_data[y * m_cx + x];
+            return board_data_t<t_char>::m_data[y * m_cx + x];
         }
         return '?';
     }
     // x, y: absolute coordinate
-    void set_at(int x, int y, xchar_t ch) {
+    void set_at(int x, int y, t_char ch) {
         if (0 <= x && x < m_cx && 0 <= y && y < m_cy) {
-            m_data[y * m_cx + x] = ch;
+            board_data_t<t_char>::m_data[y * m_cx + x] = ch;
         }
     }
 
@@ -103,23 +108,23 @@ struct board_t : board_data_t {
     }
 
     // x, y: relative coordinate
-    xchar_t get_on(int x, int y) const {
+    t_char get_on(int x, int y) const {
         assert(m_x0 <= 0);
         assert(m_y0 <= 0);
         return get_at(x - m_x0, y - m_y0);
     }
     // x, y: relative coordinate
-    void set_on(int x, int y, xchar_t ch) {
+    void set_on(int x, int y, t_char ch) {
         assert(m_x0 <= 0);
         assert(m_y0 <= 0);
         set_at(x - m_x0, y - m_y0, ch);
     }
 
     // x0: absolute coordinate
-    void insert_x(int x0, int cx = 1, xchar_t ch = ' ') {
+    void insert_x(int x0, int cx = 1, t_char ch = ' ') {
         assert(0 <= x0 && x0 <= m_cx);
 
-        board_t data(m_cx + cx, m_cy, ch);
+        board_t<t_char> data(m_cx + cx, m_cy, ch);
 
         for (int y = 0; y < m_cy; ++y) {
             for (int x = 0; x < m_cx; ++x) {
@@ -131,15 +136,15 @@ struct board_t : board_data_t {
             }
         }
 
-        m_data = std::move(data.m_data);
+        board_data_t<t_char>::m_data = std::move(data.m_data);
         m_cx += cx;
     }
 
     // y0: absolute coordinate
-    void insert_y(int y0, int cy = 1, xchar_t ch = ' ') {
+    void insert_y(int y0, int cy = 1, t_char ch = ' ') {
         assert(0 <= y0 && y0 <= m_cy);
 
-        board_t data(m_cx, m_cy + cy, ch);
+        board_t<t_char> data(m_cx, m_cy + cy, ch);
 
         for (int y = 0; y < m_cy; ++y) {
             for (int x = 0; x < m_cx; ++x) {
@@ -151,7 +156,7 @@ struct board_t : board_data_t {
             }
         }
 
-        m_data = std::move(data.m_data);
+        board_data_t<t_char>::m_data = std::move(data.m_data);
         m_cy += cy;
     }
 
@@ -159,7 +164,7 @@ struct board_t : board_data_t {
     void delete_x(int x0) {
         assert(0 <= x0 && x0 < m_cx);
 
-        board_t data(m_cx - 1, m_cy, ' ');
+        board_t<t_char> data(m_cx - 1, m_cy, ' ');
 
         for (int y = 0; y < m_cy; ++y) {
             for (int x = 0; x < m_cx - 1; ++x) {
@@ -170,7 +175,7 @@ struct board_t : board_data_t {
             }
         }
 
-        m_data = std::move(data.m_data);
+        board_data_t<t_char>::m_data = std::move(data.m_data);
         --m_cx;
     }
 
@@ -178,7 +183,7 @@ struct board_t : board_data_t {
     void delete_y(int y0) {
         assert(0 <= y0 && y0 < m_cy);
 
-        board_t data(m_cx, m_cy - 1, ' ');
+        board_t<t_char> data(m_cx, m_cy - 1, ' ');
 
         for (int y = 0; y < m_cy - 1; ++y) {
             for (int x = 0; x < m_cx; ++x) {
@@ -189,26 +194,26 @@ struct board_t : board_data_t {
             }
         }
 
-        m_data = std::move(data.m_data);
+        board_data_t<t_char>::m_data = std::move(data.m_data);
         --m_cy;
     }
 
-    void grow_x0(int cx, xchar_t ch = ' ') {
+    void grow_x0(int cx, t_char ch = ' ') {
         assert(cx > 0);
         insert_x(0, cx, ch);
         m_x0 -= cx;
     }
-    void grow_x1(int cx, xchar_t ch = ' ') {
+    void grow_x1(int cx, t_char ch = ' ') {
         assert(cx > 0);
         insert_x(m_cx, cx, ch);
     }
 
-    void grow_y0(int cy, xchar_t ch = ' ') {
+    void grow_y0(int cy, t_char ch = ' ') {
         assert(cy > 0);
         insert_y(0, cy, ch);
         m_y0 -= cy;
     }
-    void grow_y1(int cy, xchar_t ch = ' ') {
+    void grow_y1(int cy, t_char ch = ' ') {
         assert(cy > 0);
         insert_y(m_cy, cy, ch);
     }
@@ -221,7 +226,7 @@ struct board_t : board_data_t {
             found = false;
             x = 0;
             for (y = 0; y < m_cy; ++y) {
-                xchar_t ch = get_at(x, y);
+                t_char ch = get_at(x, y);
                 if (is_letter(ch)) {
                     found = true;
                     break;
@@ -239,7 +244,7 @@ struct board_t : board_data_t {
             found = false;
             x = m_cx - 1;
             for (y = 0; y < m_cy; ++y) {
-                xchar_t ch = get_at(x, y);
+                t_char ch = get_at(x, y);
                 if (is_letter(ch)) {
                     found = true;
                     break;
@@ -263,7 +268,7 @@ struct board_t : board_data_t {
             found = false;
             y = 0;
             for (x = 0; x < m_cx; ++x) {
-                xchar_t ch = get_at(x, y);
+                t_char ch = get_at(x, y);
                 if (is_letter(ch)) {
                     found = true;
                     break;
@@ -280,7 +285,7 @@ struct board_t : board_data_t {
             found = false;
             y = m_cy - 1;
             for (x = 0; x < m_cx; ++x) {
-                xchar_t ch = get_at(x, y);
+                t_char ch = get_at(x, y);
                 if (is_letter(ch)) {
                     found = true;
                     break;
@@ -304,10 +309,10 @@ struct board_t : board_data_t {
     void print() const {
         std::printf("dx:%d, dy:%d, cx:%d, cy:%d\n", m_x0, m_y0, m_cx, m_cy);
         for (int y = m_y0; y < m_y0 + m_cy; ++y) {
-            printf("%3d: ", y);
+            std::printf("%3d: ", y);
             for (int x = m_x0; x < m_x0 + m_cx; ++x) {
                 auto ch = get_on(x, y);
-                putchar(ch);
+                std::putchar(ch);
             }
             std::printf("\n");
         }
@@ -316,7 +321,7 @@ struct board_t : board_data_t {
 
     bool is_crossable_x(int x, int y) const {
         assert(is_letter(get_on(x, y)));
-        xchar_t ch1, ch2;
+        t_char ch1, ch2;
         ch1 = get_on(x - 1, y);
         ch2 = get_on(x + 1, y);
         if (ch1 == '?' || ch2 == '?')
@@ -325,7 +330,7 @@ struct board_t : board_data_t {
     }
     bool is_crossable_y(int x, int y) const {
         assert(is_letter(get_on(x, y)));
-        xchar_t ch1, ch2;
+        t_char ch1, ch2;
         ch1 = get_on(x, y - 1);
         ch2 = get_on(x, y + 1);
         if (ch1 == '?' || ch2 == '?')
@@ -335,7 +340,7 @@ struct board_t : board_data_t {
 
     bool must_be_cross(int x, int y) const {
         assert(is_letter(get_on(x, y)));
-        xchar_t ch1, ch2;
+        t_char ch1, ch2;
         ch1 = get_on(x - 1, y);
         ch2 = get_on(x + 1, y);
         bool flag1 = (is_letter(ch1) || is_letter(ch2));
@@ -345,7 +350,7 @@ struct board_t : board_data_t {
         return flag1 && flag2;
     }
 
-    void apply_size(const candidate_t& cand) {
+    void apply_size(const candidate_t<t_char>& cand) {
         auto& word = cand.m_word;
         int x = cand.m_x, y = cand.m_y;
         if (cand.m_vertical) {
@@ -359,7 +364,7 @@ struct board_t : board_data_t {
     }
 
     static void unittest() {
-        board_t b(3, 3, '#');
+        board_t<t_char> b(3, 3, '#');
         b.insert_x(1, 1, '|');
         assert(b.get_at(0, 0) == '#');
         assert(b.get_at(1, 0) == '|');
@@ -449,16 +454,19 @@ struct board_t : board_data_t {
     }
 };
 
+template <typename t_char>
 struct generation_t {
+    typedef std::basic_string<t_char> t_string;
+
     inline static bool s_generated = false;
     inline static bool s_canceled = false;
-    inline static board_t s_solution;
+    inline static board_t<t_char> s_solution;
     inline static std::mutex s_mutex;
-    board_t m_board;
-    std::unordered_set<xstring_t> m_words, m_dict;
+    board_t<t_char> m_board;
+    std::unordered_set<t_string> m_words, m_dict;
     std::unordered_set<pos_t> m_crossable_x, m_crossable_y;
 
-    void apply_candidate(const candidate_t& cand) {
+    void apply_candidate(const candidate_t<t_char>& cand) {
         auto& word = cand.m_word;
         m_words.erase(word);
         int x = cand.m_x, y = cand.m_y;
@@ -489,17 +497,17 @@ struct generation_t {
         }
     }
 
-    std::vector<candidate_t>
+    std::vector<candidate_t<t_char> >
     get_candidates_x(int x, int y) const {
-        std::vector<candidate_t> cands;
+        std::vector<candidate_t<t_char> > cands;
 
-        xchar_t ch0 = m_board.get_on(x, y);
+        t_char ch0 = m_board.get_on(x, y);
         assert(is_letter(ch0));
 
-        xchar_t ch1 = m_board.get_on(x - 1, y);
-        xchar_t ch2 = m_board.get_on(x + 1, y);
+        t_char ch1 = m_board.get_on(x - 1, y);
+        t_char ch2 = m_board.get_on(x + 1, y);
         if (!is_letter(ch1) && !is_letter(ch2)) {
-            xchar_t sz[2] = { ch0, 0 };
+            t_char sz[2] = { ch0, 0 };
             cands.push_back({ x, y, false, sz });
         }
 
@@ -512,8 +520,8 @@ struct generation_t {
                 int x1 = x0 + int(word.size());
                 bool matched = true;
                 if (matched) {
-                    xchar_t ch1 = m_board.get_on(x0 - 1, y);
-                    xchar_t ch2 = m_board.get_on(x1, y);
+                    t_char ch1 = m_board.get_on(x0 - 1, y);
+                    t_char ch2 = m_board.get_on(x1, y);
                     if (is_letter(ch1) || ch1 == ' ') {
                         matched = false;
                     } else if (is_letter(ch2) || ch2 == ' ') {
@@ -522,7 +530,7 @@ struct generation_t {
                 }
                 if (matched) {
                     for (size_t k = 0; k < word.size(); ++k) {
-                        xchar_t ch3 = m_board.get_on(x0 + int(k), y);
+                        t_char ch3 = m_board.get_on(x0 + int(k), y);
                         if (ch3 != '?' && word[k] != ch3) {
                             matched = false;
                             break;
@@ -538,17 +546,17 @@ struct generation_t {
         return cands;
     }
 
-    std::vector<candidate_t>
+    std::vector<candidate_t<t_char> >
     get_candidates_y(int x, int y) const {
-        std::vector<candidate_t> cands;
+        std::vector<candidate_t<t_char> > cands;
 
-        xchar_t ch0 = m_board.get_on(x, y);
+        t_char ch0 = m_board.get_on(x, y);
         assert(is_letter(ch0));
 
-        xchar_t ch1 = m_board.get_on(x, y - 1);
-        xchar_t ch2 = m_board.get_on(x, y + 1);
+        t_char ch1 = m_board.get_on(x, y - 1);
+        t_char ch2 = m_board.get_on(x, y + 1);
         if (!is_letter(ch1) && !is_letter(ch2)) {
-            xchar_t sz[2] = { ch0, 0 };
+            t_char sz[2] = { ch0, 0 };
             cands.push_back({ x, y, true, sz });
         }
 
@@ -561,8 +569,8 @@ struct generation_t {
                 int y1 = y0 + int(word.size());
                 bool matched = true;
                 if (matched) {
-                    xchar_t ch1 = m_board.get_on(x, y0 - 1);
-                    xchar_t ch2 = m_board.get_on(x, y1);
+                    t_char ch1 = m_board.get_on(x, y0 - 1);
+                    t_char ch2 = m_board.get_on(x, y1);
                     if (is_letter(ch1) || ch1 == ' ') {
                         matched = false;
                     } else if (is_letter(ch2) || ch2 == ' ') {
@@ -571,7 +579,7 @@ struct generation_t {
                 }
                 if (matched) {
                     for (size_t k = 0; k < word.size(); ++k) {
-                        xchar_t ch3 = m_board.get_on(x, y0 + int(k));
+                        t_char ch3 = m_board.get_on(x, y0 + int(k));
                         if (ch3 != '?' && word[k] != ch3) {
                             matched = false;
                             break;
@@ -587,8 +595,8 @@ struct generation_t {
         return cands;
     }
 
-    bool fixup_candidates(std::vector<candidate_t>& candidates) {
-        std::vector<candidate_t> cands;
+    bool fixup_candidates(std::vector<candidate_t<t_char> >& candidates) {
+        std::vector<candidate_t<t_char> > cands;
         std::unordered_set<pos_t> positions;
         for (auto& cand : candidates) {
             if (cand.m_word.size() == 1) {
@@ -618,7 +626,7 @@ struct generation_t {
         if (m_crossable_x.empty() && m_crossable_y.empty())
             return false;
 
-        std::vector<candidate_t> candidates;
+        std::vector<candidate_t<t_char> > candidates;
 
         for (auto& cross : m_crossable_x) {
             auto cands = get_candidates_x(cross.first, cross.second);
@@ -648,7 +656,7 @@ struct generation_t {
 
         if (m_words.empty()) {
             if (fixup_candidates(candidates)) {
-                board_t board0 = m_board;
+                board_t<t_char> board0 = m_board;
                 board0.trim();
                 board0.replace('?', '#');
                 if (is_solution(board0)) {
@@ -662,7 +670,7 @@ struct generation_t {
         }
 
         for (auto& cand : candidates) {
-            generation_t copy(*this);
+            generation_t<t_char> copy(*this);
             copy.apply_candidate(cand);
             if (copy.generate_recurse())
                 return true;
@@ -686,7 +694,7 @@ struct generation_t {
             return false;
 
         auto word = *words.begin();
-        candidate_t cand = { 0, 0, false, word };
+        candidate_t<t_char> cand = { 0, 0, false, word };
         apply_candidate(cand);
         if (!generate_recurse())
             return false;
@@ -696,7 +704,7 @@ struct generation_t {
         return true;
     }
 
-    bool is_solution(const board_t& board) const {
+    bool is_solution(const board_t<t_char>& board) const {
         for (int y = board.m_y0; y < board.m_y0 + board.m_cy; ++y) {
             for (int x = board.m_x0; x < board.m_x0 + board.m_cx; ++x) {
                 auto ch = board.get_on(x, y);
@@ -705,13 +713,13 @@ struct generation_t {
             }
         }
 
-        std::unordered_set<xstring_t> words;
+        std::unordered_set<t_string> words;
 
         for (int y = board.m_y0; y < board.m_y0 + board.m_cy; ++y) {
             for (int x = board.m_x0; x < board.m_x0 + board.m_cx - 1; ++x) {
                 auto ch0 = board.get_on(x, y);
                 auto ch1 = board.get_on(x + 1, y);
-                xstring_t word;
+                t_string word;
                 word += ch0;
                 word += ch1;
                 if (is_letter(ch0) && is_letter(ch1)) {
@@ -735,7 +743,7 @@ struct generation_t {
             for (int y = board.m_y0; y < board.m_y0 + board.m_cy - 1; ++y) {
                 auto ch0 = board.get_on(x, y);
                 auto ch1 = board.get_on(x, y + 1);
-                xstring_t word;
+                t_string word;
                 word += ch0;
                 word += ch1;
                 if (is_letter(ch0) && is_letter(ch1)) {
@@ -758,8 +766,8 @@ struct generation_t {
         return words.size() == m_dict.size();
     }
 
-    static bool do_generate(const std::unordered_set<xstring_t>& words) {
-        generation_t data;
+    static bool do_generate(const std::unordered_set<t_string>& words) {
+        generation_t<t_char> data;
         data.m_words = data.m_dict = words;
         return data.generate();
     }
