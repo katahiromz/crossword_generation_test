@@ -34,7 +34,7 @@ inline bool is_letter(xchar_t ch) {
 }
 
 struct board_data_t {
-    std::vector<xchar_t> m_data;
+    std::basic_string<xchar_t> m_data;
 
     board_data_t(int cx = 1, int cy = 1, xchar_t ch = ' ') {
         allocate(cx, cy, ch);
