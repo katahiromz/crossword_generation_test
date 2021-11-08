@@ -1,4 +1,5 @@
 #pragma once
+#define _GNU_SOURCE
 #include <cstdio>
 #include <cstdint>
 #include <ctime>
@@ -10,7 +11,7 @@
 #include <mutex>
 #include <algorithm>
 #include <utility>
-#ifdef _WIN32
+#if defined(_WIN32)
     #include <windows.h>
 #else
     #include <unistd.h>
@@ -54,7 +55,7 @@ inline bool is_letter(t_char ch) {
 }
 
 inline uint32_t get_num_processors(void) {
-#ifdef _WIN32
+#if defined(_WIN32)
     SYSTEM_INFO info;
     ::GetSystemInfo(&info);
     return info.dwNumberOfProcessors;
@@ -806,7 +807,7 @@ struct generation_t {
 
     static bool do_generate_proc(const void *arg) {
         std::srand(::GetTickCount() ^ ::GetCurrentThreadId());
-#ifdef _WIN32
+#if defined(_WIN32)
         ::SetThreadPriority(::GetCurrentThread(), THREAD_PRIORITY_ABOVE_NORMAL);
 #endif
         auto words = reinterpret_cast<const std::unordered_set<t_string>*>(arg);
@@ -833,7 +834,7 @@ struct generation_t {
             }
         }
 
-#ifdef _WIN32
+#if defined(_WIN32)
         ::SetThreadPriority(::GetCurrentThread(), THREAD_PRIORITY_BELOW_NORMAL);
 #endif
 
@@ -852,7 +853,7 @@ struct generation_t {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
 
-#ifdef _WIN32
+#if defined(_WIN32)
         ::SetThreadPriority(::GetCurrentThread(), THREAD_PRIORITY_NORMAL);
 #endif
 
