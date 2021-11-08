@@ -136,7 +136,7 @@ struct board_t : board_data_t<t_char> {
             }
         }
 
-        board_data_t<t_char>::m_data = std::move(data.m_data);
+        this->m_data = std::move(data.m_data);
         m_cx += cx;
     }
 
@@ -156,7 +156,7 @@ struct board_t : board_data_t<t_char> {
             }
         }
 
-        board_data_t<t_char>::m_data = std::move(data.m_data);
+        this->m_data = std::move(data.m_data);
         m_cy += cy;
     }
 
@@ -175,7 +175,7 @@ struct board_t : board_data_t<t_char> {
             }
         }
 
-        board_data_t<t_char>::m_data = std::move(data.m_data);
+        this->m_data = std::move(data.m_data);
         --m_cx;
     }
 
@@ -194,7 +194,7 @@ struct board_t : board_data_t<t_char> {
             }
         }
 
-        board_data_t<t_char>::m_data = std::move(data.m_data);
+        this->m_data = std::move(data.m_data);
         --m_cy;
     }
 
