@@ -661,18 +661,6 @@ struct generation_t {
             return s_generated;
         }
 
-        std::sort(candidates.begin(), candidates.end(),
-            [&](const candidate_t& x, const candidate_t& y) {
-                board_t a = m_board;
-                board_t b = m_board;
-                a.apply_size(x);
-                b.apply_size(y);
-                int cxy0 = (a.m_cx + a.m_cy) * (a.m_cx - a.m_cy);
-                int cxy1 = (b.m_cx + b.m_cy) * (b.m_cx - b.m_cy);
-                return cxy0 < cxy1;
-            }
-        );
-
         for (auto& cand : candidates) {
             generation_t copy(*this);
             copy.apply_candidate(cand);
