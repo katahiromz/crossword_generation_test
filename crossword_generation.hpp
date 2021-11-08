@@ -860,3 +860,50 @@ struct generation_t {
         return s_generated;
     }
 };
+
+template <typename t_char>
+inline bool
+check_connectivity(const std::unordered_set<std::basic_string<t_char> >& words) {
+    typedef std::basic_string<t_char> t_string;
+    if (words.size() <= 1)
+        return true;
+
+    std::vector<t_string> vec_words(words.begin(), words.end());
+
+    std::unordered_map<size_t, size_t> mapping0;
+    std::unordered_map<size_t, size_t> mapping1;
+    for (size_t i = 0; i < vec_words.size() - 1; ++i) {
+        auto& w0 = vec_words[i];
+        for (size_t j = i + 1; j < vec_words.size(); ++j) {
+            auto& w1 = vec_words[j];
+            for (auto& ch0 : w0) {
+                for (auto& ch1 : w1) {
+                    if (ch0 == ch1) {
+                        mapping0.insert(std::make_pair(i, j));
+                        mapping1.insert(std::make_pair(j, i));
+                    }
+                }
+            }
+        }
+    }
+
+    std::unordered_set<size_t> indexes;
+    indexes.insert(0);
+    for (size_t i = 0; i < vec_words.size(); ++i) {
+        auto it0 = mapping0.find(i);
+        if (it0 != mapping0.end()) {
+            indexes.insert(it0->second);
+        }
+        auto it1 = mapping1.find(i);
+        if (it1 != mapping1.end()) {
+            indexes.insert(it1->second);
+        }
+    }
+
+    for (size_t i = 0; i < vec_words.size(); ++i) {
+        if (indexes.count(i) == 0)
+            return false;
+    }
+
+    return true;
+}
