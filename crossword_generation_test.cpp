@@ -453,7 +453,7 @@ struct generation_t {
     inline static board_t s_solution;
     inline static std::mutex s_mutex;
     board_t m_board;
-    std::unordered_set<xstring_t> m_words;
+    std::unordered_set<xstring_t> m_words, m_dict;
     std::unordered_set<pos_t> m_crossable_x, m_crossable_y;
 
     void apply_candidate(const candidate_t& cand) {
@@ -610,14 +610,11 @@ struct generation_t {
         if (s_canceled)
             return false;
 
-        if (s_generated)
-            return true;
+        //if (s_generated)
+        //    return true;
 
         if (m_crossable_x.empty() && m_crossable_y.empty())
             return false;
-
-        auto crossable_x = m_crossable_x;
-        auto crossable_y = m_crossable_y;
 
         std::vector<candidate_t> candidates;
 
@@ -626,10 +623,12 @@ struct generation_t {
             if (cands.empty()) {
                 if (m_board.must_be_cross(cross.first, cross.second))
                     return false;
+            } else if (cands.size() == 1 && cands[0].m_word.size() == 1) {
+                if (m_board.must_be_cross(cross.first, cross.second))
+                    return false;
             } else {
                 candidates.insert(candidates.end(), cands.begin(), cands.end());
             }
-            crossable_x.erase(cross);
         }
 
         for (auto& cross : m_crossable_y) {
@@ -637,20 +636,33 @@ struct generation_t {
             if (cands.empty()) {
                 if (m_board.must_be_cross(cross.first, cross.second))
                     return false;
+            } else if (cands.size() == 1 && cands[0].m_word.size() == 1) {
+                if (m_board.must_be_cross(cross.first, cross.second))
+                    return false;
             } else {
                 candidates.insert(candidates.end(), cands.begin(), cands.end());
             }
-            crossable_y.erase(cross);
         }
 
         if (m_words.empty()) {
             if (fixup_candidates(candidates)) {
-                std::lock_guard<std::mutex> lock(s_mutex);
-                s_generated = true;
-                s_solution = m_board;
-                s_solution.trim();
-                s_solution.replace('?', '#');
-                return true;
+                board_t board0 = m_board;
+                board0.trim();
+                board0.replace('?', '#');
+                if (is_solution(board0)) {
+                    std::lock_guard<std::mutex> lock(s_mutex);
+                    if (s_generated) {
+                        int cxy0 = board0.m_cx + board0.m_cy;
+                        int cxy1 = s_solution.m_cx + s_solution.m_cy;
+                        if (cxy0 < cxy1) {
+                            s_solution = board0;
+                        }
+                    } else {
+                        s_generated = true;
+                        s_solution = board0;
+                    }
+                    return true;
+                }
             }
             return false;
         }
@@ -669,8 +681,6 @@ struct generation_t {
 
         for (auto& cand : candidates) {
             generation_t copy(*this);
-            copy.m_crossable_x = crossable_x;
-            copy.m_crossable_y = crossable_y;
             copy.apply_candidate(cand);
             if (copy.generate_recurse())
                 return true;
@@ -701,9 +711,71 @@ struct generation_t {
         return true;
     }
 
+    bool is_solution(const board_t& board) const {
+        for (int y = board.m_y0; y < board.m_y0 + board.m_cy; ++y) {
+            for (int x = board.m_x0; x < board.m_x0 + board.m_cx; ++x) {
+                auto ch = board.get_on(x, y);
+                if (!is_letter(ch) && ch != '#')
+                    return false;
+            }
+        }
+
+        std::unordered_set<xstring_t> words;
+
+        for (int y = board.m_y0; y < board.m_y0 + board.m_cy; ++y) {
+            for (int x = board.m_x0; x < board.m_x0 + board.m_cx - 1; ++x) {
+                auto ch0 = board.get_on(x, y);
+                auto ch1 = board.get_on(x + 1, y);
+                xstring_t word;
+                word += ch0;
+                word += ch1;
+                if (is_letter(ch0) && is_letter(ch1)) {
+                    ++x;
+                    for (;;) {
+                        ++x;
+                        ch1 = board.get_on(x, y);
+                        if (!is_letter(ch1))
+                            break;
+                        word += ch1;
+                    }
+                    if (words.count(word) > 0 || m_dict.count(word) == 0) {
+                        return false;
+                    }
+                    words.insert(word);
+                }
+            }
+        }
+
+        for (int x = board.m_x0; x < board.m_x0 + board.m_cx; ++x) {
+            for (int y = board.m_y0; y < board.m_y0 + board.m_cy - 1; ++y) {
+                auto ch0 = board.get_on(x, y);
+                auto ch1 = board.get_on(x, y + 1);
+                xstring_t word;
+                word += ch0;
+                word += ch1;
+                if (is_letter(ch0) && is_letter(ch1)) {
+                    ++y;
+                    for (;;) {
+                        ++y;
+                        ch1 = board.get_on(x, y);
+                        if (!is_letter(ch1))
+                            break;
+                        word += ch1;
+                    }
+                    if (words.count(word) > 0 || m_dict.count(word) == 0) {
+                        return false;
+                    }
+                    words.insert(word);
+                }
+            }
+        }
+
+        return words.size() == m_dict.size();
+    }
+
     static bool do_generate(const std::unordered_set<xstring_t>& words) {
         generation_t data;
-        data.m_words = words;
+        data.m_words = data.m_dict = words;
         return data.generate();
     }
 };
@@ -711,35 +783,17 @@ struct generation_t {
 int main(void) {
     board_t::unittest();
     generation_t::do_generate({
-"ABBREVIATION",
-"ABDOMEN",
-"ABILITY",
-"ABOLITION",
-"ABSENCE",
-"ABUSE",
-"ACADEMY",
-"ACCELERATOR",
-"ACCENT",
-"ACCEPTANCE",
-"ACCESS",
-"ACCESSIBILITY",
-"ACCESSORIES",
-"ACCESSORY",
-"ACCIDENT",
-"ACCOMMODATION",
-"ACCOMPLISHMENT",
-"ACCORD",
-"ACCORDION",
-"ACCOUNT",
-"ACCOUNTANT",
-"ACCOUNTS",
-"ACCURACY",
-"ACHIEVEMENT",
-"ACID",
-"ACKNOWLEDGMENTS",
-"ACQUAINTANCE",
-"ACRE",
-"ACRES",
+"WE",
+"WEAKNESS",
+"WEALTH",
+"WEAPON",
+"WEAR",
+"WEATHER",
+"WEB",
+"WEBCAM",
+"WEBSITE",
+"WED",
+"WEDDING",
         });
     return 0;
 }
