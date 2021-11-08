@@ -10,8 +10,24 @@
 #include <mutex>
 #include <algorithm>
 #include <utility>
-#include <sstream>
-#include <windows.h>
+#ifdef _WIN32
+    #include <windows.h>
+#else
+    #include <unistd.h>
+    #include <sys/types.h>
+    inline unsigned GetTickCount(void) {
+        using namespace std;
+        struct timespec ts;
+        clock_gettime(CLOCK_REALTIME, &ts);
+        unsigned tick = ts.tv_nsec / 1000000;
+        tick += ts.tv_sec * 1000;
+        return tick;
+    }
+    inline unsigned GetCurrentThreadId(void) {
+        using namespace std;
+        return gettid();
+    }
+#endif
 
 typedef std::pair<int, int> pos_t;
 
@@ -38,9 +54,13 @@ inline bool is_letter(t_char ch) {
 }
 
 inline uint32_t get_num_processors(void) {
+#ifdef _WIN32
     SYSTEM_INFO info;
     ::GetSystemInfo(&info);
     return info.dwNumberOfProcessors;
+#else
+    return std::thread::hardware_concurrency();
+#endif
 }
 
 template <typename t_char>
@@ -786,14 +806,17 @@ struct generation_t {
 
     static bool do_generate_proc(const void *arg) {
         std::srand(::GetTickCount() ^ ::GetCurrentThreadId());
+#ifdef _WIN32
         ::SetThreadPriority(::GetCurrentThread(), THREAD_PRIORITY_ABOVE_NORMAL);
+#endif
         auto words = reinterpret_cast<const std::unordered_set<t_string>*>(arg);
         bool flag = do_generate(*words);
         delete words;
         return flag;
     }
 
-    static bool do_generate_multithread(const std::unordered_set<t_string>& words) {
+    // multithread
+    static bool do_generate_mt(const std::unordered_set<t_string>& words) {
         auto num_threads = get_num_processors();
         //printf("num_threads: %d\n", int(num_threads));
         const int RETRY_COUNT = 3;
@@ -810,7 +833,9 @@ struct generation_t {
             }
         }
 
+#ifdef _WIN32
         ::SetThreadPriority(::GetCurrentThread(), THREAD_PRIORITY_BELOW_NORMAL);
+#endif
 
         for (size_t i = 0; i < RETRY_COUNT; ++i) {
             if (s_generated || s_canceled)
@@ -827,7 +852,9 @@ struct generation_t {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
 
+#ifdef _WIN32
         ::SetThreadPriority(::GetCurrentThread(), THREAD_PRIORITY_NORMAL);
+#endif
 
         return s_generated;
     }

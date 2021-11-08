@@ -1,6 +1,8 @@
 #include "crossword_generation.hpp"
 
 int main(void) {
+    std::srand(::GetTickCount() ^ ::GetCurrentThreadId());
+
     typedef char xchar_t;
     //typedef wchar_t xchar_t;
 
@@ -9,7 +11,7 @@ int main(void) {
     const int RETRY_COUNT = 3;
     for (int i = 0; i < RETRY_COUNT; ++i)
     {
-        generation_t<xchar_t>::do_generate_multithread({
+        generation_t<xchar_t>::do_generate_mt({
 "ABBREVIATION",
 "ABDOMEN",
 "ABILITY",
