@@ -69,8 +69,9 @@ int main(int argc, char **argv) {
 
     auto t0 = std::time(NULL);
     {
-        if (!check_connectivity<xchar_t>(s_words)) {
-            std::printf("check_connectivity failed\n");
+        std::string nonconnected;
+        if (!check_connectivity<xchar_t>(s_words, nonconnected)) {
+            std::printf("check_connectivity failed: %s\n\n", nonconnected.c_str());
         } else {
             generation_t<xchar_t>::do_generate_mt(s_words);
             if (generation_t<xchar_t>::s_generated) {

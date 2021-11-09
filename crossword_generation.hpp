@@ -877,7 +877,9 @@ struct generation_t {
 
 template <typename t_char>
 inline bool
-check_connectivity(const std::unordered_set<std::basic_string<t_char> >& words) {
+check_connectivity(const std::unordered_set<std::basic_string<t_char> >& words,
+                   std::basic_string<t_char>& nonconnected)
+{
     typedef std::basic_string<t_char> t_string;
     if (words.size() <= 1)
         return true;
@@ -914,6 +916,7 @@ skip:;
 
     for (size_t i = 0; i < vec_words.size(); ++i) {
         if (indexes.count(i) == 0) {
+            nonconnected = vec_words[i];
             return false;
         }
     }
