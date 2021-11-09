@@ -661,7 +661,7 @@ struct generation_t {
 
     bool generate_recurse() {
         if (s_canceled)
-            return false;
+            return s_generated;
 
         if (s_generated)
             return true;
@@ -715,6 +715,8 @@ struct generation_t {
         std::random_shuffle(candidates.begin(), candidates.end());
 
         for (auto& cand : candidates) {
+            if (s_canceled)
+                return s_generated;
             generation_t<t_char> copy(*this);
             copy.apply_candidate(cand);
             if (copy.generate_recurse())
