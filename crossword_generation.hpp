@@ -834,6 +834,7 @@ struct generation_t {
         auto num_threads = get_num_processors();
         //printf("num_threads: %d\n", int(num_threads));
         const int RETRY_COUNT = 3;
+        const int INTERVAL = 100;
 
         s_count = 0;
         for (size_t i = 0; i < num_threads; ++i) {
@@ -854,7 +855,7 @@ struct generation_t {
         for (size_t i = 0; i < RETRY_COUNT; ++i) {
             if (s_generated || s_canceled)
                 break;
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            std::this_thread::sleep_for(std::chrono::milliseconds(INTERVAL));
         }
 
         if (!s_generated)
@@ -863,7 +864,7 @@ struct generation_t {
         for (size_t i = 0; i < RETRY_COUNT; ++i) {
             if (s_count >= num_threads)
                 break;
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            std::this_thread::sleep_for(std::chrono::milliseconds(INTERVAL));
         }
 
 #if defined(_WIN32)
