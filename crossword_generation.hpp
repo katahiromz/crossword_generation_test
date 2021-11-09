@@ -7,6 +7,7 @@
 #include <vector>
 #include <unordered_set>
 #include <unordered_map>
+#include <queue>
 #include <thread>
 #include <mutex>
 #include <algorithm>
@@ -31,14 +32,20 @@
 #endif
 
 namespace crossword_generation {
-    typedef std::pair<int, int> pos_t;
+    struct pos_t {
+        int m_x, m_y;
+        pos_t(int x, int y) : m_x(x), m_y(y) { }
+        bool operator==(const pos_t& pos) const {
+            return m_x == pos.m_x && m_y == pos.m_y;
+        }
+    };
 } // namespace crossword_generation
 
 namespace std {
     template <>
     struct hash<crossword_generation::pos_t> {
         size_t operator()(const crossword_generation::pos_t& pos) const {
-            return uint16_t(pos.first) | (uint16_t(pos.second) << 16);
+            return uint16_t(pos.m_x) | (uint16_t(pos.m_y) << 16);
         }
     };
 } // namespace std
@@ -665,12 +672,12 @@ struct generation_t {
         std::vector<candidate_t<t_char> > candidates;
 
         for (auto& cross : m_crossable_x) {
-            auto cands = get_candidates_x(cross.first, cross.second);
+            auto cands = get_candidates_x(cross.m_x, cross.m_y);
             if (cands.empty()) {
-                if (m_board.must_be_cross(cross.first, cross.second))
+                if (m_board.must_be_cross(cross.m_x, cross.m_y))
                     return false;
             } else if (cands.size() == 1 && cands[0].m_word.size() == 1) {
-                if (m_board.must_be_cross(cross.first, cross.second))
+                if (m_board.must_be_cross(cross.m_x, cross.m_y))
                     return false;
             } else {
                 candidates.insert(candidates.end(), cands.begin(), cands.end());
@@ -678,12 +685,12 @@ struct generation_t {
         }
 
         for (auto& cross : m_crossable_y) {
-            auto cands = get_candidates_y(cross.first, cross.second);
+            auto cands = get_candidates_y(cross.m_x, cross.m_y);
             if (cands.empty()) {
-                if (m_board.must_be_cross(cross.first, cross.second))
+                if (m_board.must_be_cross(cross.m_x, cross.m_y))
                     return false;
             } else if (cands.size() == 1 && cands[0].m_word.size() == 1) {
-                if (m_board.must_be_cross(cross.first, cross.second))
+                if (m_board.must_be_cross(cross.m_x, cross.m_y))
                     return false;
             } else {
                 candidates.insert(candidates.end(), cands.begin(), cands.end());
@@ -875,40 +882,39 @@ check_connectivity(const std::unordered_set<std::basic_string<t_char> >& words) 
         return true;
 
     std::vector<t_string> vec_words(words.begin(), words.end());
+    std::queue<size_t> queue;
+    std::unordered_set<size_t> indexes;
+    queue.emplace(0);
 
-    std::unordered_map<size_t, size_t> mapping0;
-    std::unordered_map<size_t, size_t> mapping1;
-    for (size_t i = 0; i < vec_words.size() - 1; ++i) {
-        auto& w0 = vec_words[i];
-        for (size_t j = i + 1; j < vec_words.size(); ++j) {
-            auto& w1 = vec_words[j];
-            for (auto& ch0 : w0) {
-                for (auto& ch1 : w1) {
+    while (!queue.empty()) {
+        size_t index0 = queue.front();
+        indexes.insert(index0);
+        queue.pop();
+
+        auto& w0 = vec_words[index0];
+        for (size_t index1 = 0; index1 < vec_words.size(); ++index1) {
+            if (index0 == index1)
+                continue;
+
+            auto& w1 = vec_words[index1];
+            for (auto ch0 : w0) {
+                for (auto ch1 : w1) {
                     if (ch0 == ch1) {
-                        mapping0.insert(std::make_pair(i, j));
-                        mapping1.insert(std::make_pair(j, i));
+                        if (indexes.count(index1) == 0) {
+                            queue.emplace(index1);
+                            goto skip;
+                        }
                     }
                 }
             }
-        }
-    }
-
-    std::unordered_set<size_t> indexes;
-    indexes.insert(0);
-    for (size_t i = 0; i < vec_words.size(); ++i) {
-        auto it0 = mapping0.find(i);
-        if (it0 != mapping0.end()) {
-            indexes.insert(it0->second);
-        }
-        auto it1 = mapping1.find(i);
-        if (it1 != mapping1.end()) {
-            indexes.insert(it1->second);
+skip:;
         }
     }
 
     for (size_t i = 0; i < vec_words.size(); ++i) {
-        if (indexes.count(i) == 0)
+        if (indexes.count(i) == 0) {
             return false;
+        }
     }
 
     return true;
