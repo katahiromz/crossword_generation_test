@@ -101,11 +101,11 @@ template <typename t_char>
 struct board_t : board_data_t<t_char> {
     typedef std::basic_string<t_char> t_string;
 
-    int m_x0 = 0, m_y0 = 0;
-    int m_cx = 0, m_cy = 0;
+    int m_x0, m_y0;
+    int m_cx, m_cy;
 
     board_t(int cx = 1, int cy = 1, t_char ch = ' ', int x0 = 0, int y0 = 0)
-        : board_data_t<t_char>(cx, cy, ch), m_cx(cx), m_cy(cy), m_x0(x0), m_y0(y0)
+        : board_data_t<t_char>(cx, cy, ch), m_x0(x0), m_y0(y0), m_cx(cx), m_cy(cy)
     {
     }
     board_t(const board_t<t_char>& b) = default;
@@ -814,6 +814,7 @@ struct generation_t {
 
     static bool do_generate(const std::unordered_set<t_string>& words) {
         generation_t<t_char> data;
+        s_generated = s_canceled = false;
         data.m_words = data.m_dict = words;
         bool flag = data.generate();
         ++s_count;
@@ -833,13 +834,13 @@ struct generation_t {
 
     // multithread
     static bool do_generate_mt(const std::unordered_set<t_string>& words) {
-        auto num_threads = get_num_processors();
+        int num_threads = (int)get_num_processors();
         //printf("num_threads: %d\n", int(num_threads));
         const int RETRY_COUNT = 3;
         const int INTERVAL = 100;
 
         s_count = 0;
-        for (size_t i = 0; i < num_threads; ++i) {
+        for (int i = 0; i < num_threads; ++i) {
             auto clone = new std::unordered_set<t_string>(words);
             try {
                 std::thread t(do_generate_proc, clone);
