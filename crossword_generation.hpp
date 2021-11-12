@@ -746,7 +746,6 @@ struct generation_t {
         if (!generate_recurse())
             return false;
 
-        std::lock_guard<std::mutex> lock(s_mutex);
         return true;
     }
 
@@ -833,6 +832,7 @@ struct generation_t {
 
         s_count = 0;
         s_generated = s_canceled = false;
+
         for (int i = 0; i < num_threads; ++i) {
             auto clone = new std::unordered_set<t_string>(words);
             try {
