@@ -821,19 +821,18 @@ struct generation_t {
         return flag;
     }
 
-    static bool do_generate_proc(const void *arg) {
+    static bool generate_from_words_proc(const std::unordered_set<t_string> *words, int iThread) {
         std::srand(::GetTickCount() ^ ::GetCurrentThreadId());
 #if defined(_WIN32)
         ::SetThreadPriority(::GetCurrentThread(), THREAD_PRIORITY_ABOVE_NORMAL);
 #endif
-        auto words = reinterpret_cast<const std::unordered_set<t_string>*>(arg);
         bool flag = do_generate(*words);
         delete words;
         return flag;
     }
 
     // multithread
-    static bool do_generate_mt(const std::unordered_set<t_string>& words) {
+    static bool generate_from_words(const std::unordered_set<t_string>& words) {
         int num_threads = (int)get_num_processors();
         //printf("num_threads: %d\n", int(num_threads));
         const int RETRY_COUNT = 3;
@@ -843,7 +842,7 @@ struct generation_t {
         for (int i = 0; i < num_threads; ++i) {
             auto clone = new std::unordered_set<t_string>(words);
             try {
-                std::thread t(do_generate_proc, clone);
+                std::thread t(generate_from_words_proc, clone, i);
                 t.detach();
             } catch (std::system_error& e) {
                 delete clone;
