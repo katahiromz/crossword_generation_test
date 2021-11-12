@@ -825,7 +825,11 @@ struct generation_t {
     }
 
     static bool generate_from_words(const std::unordered_set<t_string>& words) {
+#ifdef XWORDGIVER
+        int num_threads = (int)xg_dwThreadCount;
+#else
         int num_threads = (int)get_num_processors();
+#endif
         //printf("num_threads: %d\n", int(num_threads));
         const int RETRY_COUNT = 3;
         const int INTERVAL = 100;
