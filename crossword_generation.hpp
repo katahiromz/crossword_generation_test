@@ -812,26 +812,19 @@ struct generation_t {
         return words.size() == m_dict.size();
     }
 
-    static bool do_generate(const std::unordered_set<t_string>& words) {
-        generation_t<t_char> data;
-        s_generated = s_canceled = false;
-        data.m_words = data.m_dict = words;
-        bool flag = data.generate();
-        ++s_count;
-        return flag;
-    }
-
     static bool generate_from_words_proc(const std::unordered_set<t_string> *words, int iThread) {
         std::srand(::GetTickCount() ^ ::GetCurrentThreadId());
 #if defined(_WIN32)
         ::SetThreadPriority(::GetCurrentThread(), THREAD_PRIORITY_ABOVE_NORMAL);
 #endif
-        bool flag = do_generate(*words);
+        generation_t<t_char> data;
+        data.m_words = data.m_dict = *words;
+        bool flag = data.generate();
+        ++s_count;
         delete words;
         return flag;
     }
 
-    // multithread
     static bool generate_from_words(const std::unordered_set<t_string>& words) {
         int num_threads = (int)get_num_processors();
         //printf("num_threads: %d\n", int(num_threads));
@@ -839,6 +832,7 @@ struct generation_t {
         const int INTERVAL = 100;
 
         s_count = 0;
+        s_generated = s_canceled = false;
         for (int i = 0; i < num_threads; ++i) {
             auto clone = new std::unordered_set<t_string>(words);
             try {
