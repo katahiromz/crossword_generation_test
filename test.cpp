@@ -91,8 +91,14 @@ int main(int argc, char **argv) {
 
     if (argc > 1) {
         s_words.clear();
-        for (int iarg = 1; iarg < argc; ++iarg) {
-            s_words.insert(argv[iarg]);
+        if (argc == 2) {
+            if (!load_dict(argv[1], s_words)) {
+                std::fprintf(stderr, "ERROR: cannot load file '%s'\n", argv[1]);
+            }
+        } else {
+            for (int iarg = 1; iarg < argc; ++iarg) {
+                s_words.insert(argv[iarg]);
+            }
         }
     }
 
