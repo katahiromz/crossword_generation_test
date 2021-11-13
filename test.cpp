@@ -80,14 +80,30 @@ bool load_dict(const char *filename, std::unordered_set<std::string>& dict) {
     return false;
 }
 
+void do_test1(void) {
+    using namespace crossword_generation;
+    std::string nonconnected;
+    if (!check_connectivity<char>(s_words, nonconnected)) {
+        std::printf("check_connectivity failed: %s\n\n", nonconnected.c_str());
+    } else {
+        reset();
+        generation_t<char, false>::do_generate_from_words(s_words);
+        wait_for_threads();
+        if (s_generated) {
+            s_mutex.lock();
+            generation_t<char, false>::s_solution.print();
+            s_mutex.unlock();
+        } else {
+            std::printf("failed\n");
+        }
+    }
+}
+
 int main(int argc, char **argv) {
     std::srand(::GetTickCount() ^ ::GetCurrentThreadId());
 
-    typedef char xchar_t;
-    //typedef wchar_t xchar_t;
-
     using namespace crossword_generation;
-    board_t<xchar_t, false>::unittest();
+    board_t<char, false>::unittest();
 
     if (argc > 1) {
         s_words.clear();
@@ -103,23 +119,7 @@ int main(int argc, char **argv) {
     }
 
     auto t0 = std::time(NULL);
-    {
-        std::string nonconnected;
-        if (!check_connectivity<xchar_t>(s_words, nonconnected)) {
-            std::printf("check_connectivity failed: %s\n\n", nonconnected.c_str());
-        } else {
-            reset();
-            generation_t<xchar_t, false>::do_generate_from_words(s_words);
-            wait_for_threads();
-            if (s_generated) {
-                generation_t<xchar_t, false>::s_mutex.lock();
-                generation_t<xchar_t, false>::s_solution.print();
-                generation_t<xchar_t, false>::s_mutex.unlock();
-            } else {
-                std::printf("failed\n");
-            }
-        }
-    }
+    do_test1();
     auto t1 = std::time(NULL);
     printf("%u\n", int(t1 - t0));
 
