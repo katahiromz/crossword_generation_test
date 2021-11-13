@@ -110,6 +110,7 @@ int main(int argc, char **argv) {
         } else {
             reset();
             generation_t<xchar_t, false>::do_generate_from_words(s_words);
+            wait_for_threads();
             if (s_generated) {
                 generation_t<xchar_t, false>::s_mutex.lock();
                 generation_t<xchar_t, false>::s_solution.print();

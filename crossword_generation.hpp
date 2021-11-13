@@ -12,6 +12,7 @@
 #include <mutex>
 #include <algorithm>
 #include <utility>
+#include <random>
 #if defined(_WIN32)
     #include <windows.h>
 #else
@@ -55,8 +56,97 @@ inline static bool s_generated = false;
 inline static bool s_canceled = false;
 inline static int s_count = 0;
 
+template <typename t_char>
+inline bool is_letter(t_char ch) {
+    return (ch != ' ' && ch != '#' && ch != '?');
+}
+
+inline uint32_t get_num_processors(void) {
+#ifdef XWORDGIVER
+    return xg_dwThreadCount;
+#elif defined(_WIN32)
+    SYSTEM_INFO info;
+    ::GetSystemInfo(&info);
+    return info.dwNumberOfProcessors;
+#else
+    return std::thread::hardware_concurrency();
+#endif
+}
+
+// replacement of std::random_shuffle
+template <typename t_elem>
+inline void random_shuffle(t_elem& begin, t_elem& end) {
+    std::random_device rd;
+    std::mt19937 g(rd());
+    std::shuffle(begin, end, g);
+}
+
 inline void reset() {
+    s_count = 0;
     s_generated = s_canceled = false;
+#ifdef XWORDGIVER
+    for (auto& info : xg_aThreadInfo) {
+        info.m_count = 0;
+    }
+#endif
+}
+
+inline void wait_for_threads(int num_threads = get_num_processors(), int retry_count = 3) {
+    const int INTERVAL = 100;
+    for (int i = 0; i < retry_count; ++i) {
+        if (s_generated || s_canceled)
+            break;
+        std::this_thread::sleep_for(std::chrono::milliseconds(INTERVAL));
+    }
+}
+
+template <typename t_char>
+inline bool
+check_connectivity(const std::unordered_set<std::basic_string<t_char> >& words,
+                   std::basic_string<t_char>& nonconnected)
+{
+    typedef std::basic_string<t_char> t_string;
+    if (words.size() <= 1)
+        return true;
+
+    std::vector<t_string> vec_words(words.begin(), words.end());
+    std::queue<size_t> queue;
+    std::unordered_set<size_t> indexes;
+    queue.emplace(0);
+
+    while (!queue.empty()) {
+        size_t index0 = queue.front();
+        indexes.insert(index0);
+        queue.pop();
+
+        auto& w0 = vec_words[index0];
+        for (size_t index1 = 0; index1 < vec_words.size(); ++index1) {
+            if (index0 == index1)
+                continue;
+
+            auto& w1 = vec_words[index1];
+            for (auto ch0 : w0) {
+                for (auto ch1 : w1) {
+                    if (ch0 == ch1) {
+                        if (indexes.count(index1) == 0) {
+                            queue.emplace(index1);
+                            goto skip;
+                        }
+                    }
+                }
+            }
+skip:;
+        }
+    }
+
+    for (size_t i = 0; i < vec_words.size(); ++i) {
+        if (indexes.count(i) == 0) {
+            nonconnected = vec_words[i];
+            return false;
+        }
+    }
+
+    return true;
 }
 
 template <typename t_char>
@@ -66,21 +156,6 @@ struct candidate_t {
     bool m_vertical = false;
     t_string m_word;
 };
-
-template <typename t_char>
-inline bool is_letter(t_char ch) {
-    return (ch != ' ' && ch != '#' && ch != '?');
-}
-
-inline uint32_t get_num_processors(void) {
-#if defined(_WIN32)
-    SYSTEM_INFO info;
-    ::GetSystemInfo(&info);
-    return info.dwNumberOfProcessors;
-#else
-    return std::thread::hardware_concurrency();
-#endif
-}
 
 template <typename t_char>
 struct board_data_t {
@@ -530,6 +605,7 @@ struct generation_t {
     board_t<t_char, t_fixed> m_board;
     std::unordered_set<t_string> m_words, m_dict;
     std::unordered_set<pos_t> m_crossable_x, m_crossable_y;
+    int m_iThread;
 
     bool apply_candidate(const candidate_t<t_char>& cand) {
         auto& word = cand.m_word;
@@ -702,6 +778,10 @@ struct generation_t {
         if (m_crossable_x.empty() && m_crossable_y.empty())
             return false;
 
+#ifdef XWORDGIVER
+        xg_aThreadInfo[m_iThread].m_count = int(m_words.size());
+#endif
+
         std::vector<candidate_t<t_char> > candidates;
 
         for (auto& cross : m_crossable_x) {
@@ -745,7 +825,7 @@ struct generation_t {
             return s_generated;
         }
 
-        std::random_shuffle(candidates.begin(), candidates.end());
+        random_shuffle(candidates.begin(), candidates.end());
 
         for (auto& cand : candidates) {
             if (s_canceled)
@@ -822,11 +902,10 @@ struct generation_t {
     }
 
     bool generate_from_words() {
-        auto words = m_words;
-        if (words.empty())
+        if (m_words.empty())
             return false;
 
-        auto word = *words.begin();
+        auto word = *m_words.begin();
         candidate_t<t_char> cand = { 0, 0, false, word };
         apply_candidate(cand);
         if (!generate_recurse())
@@ -841,6 +920,7 @@ struct generation_t {
         ::SetThreadPriority(::GetCurrentThread(), THREAD_PRIORITY_ABOVE_NORMAL);
 #endif
         generation_t<t_char, t_fixed> data;
+        data.m_iThread = iThread;
         data.m_words = data.m_dict = *words;
         bool flag = data.generate_from_words();
         ++s_count;
@@ -848,104 +928,25 @@ struct generation_t {
         return flag;
     }
 
-    static bool do_generate_from_words(const std::unordered_set<t_string>& words) {
-#ifdef XWORDGIVER
-        int num_threads = (int)xg_dwThreadCount;
-#else
-        int num_threads = (int)get_num_processors();
-#endif
+    static bool
+    do_generate_from_words(const std::unordered_set<t_string>& words,
+                           int num_threads = get_num_processors())
+    {
         //printf("num_threads: %d\n", int(num_threads));
-        const int RETRY_COUNT = 3;
-        const int INTERVAL = 100;
-
-        s_count = 0;
-        s_generated = s_canceled = false;
 
         for (int i = 0; i < num_threads; ++i) {
             auto clone = new std::unordered_set<t_string>(words);
             try {
                 std::thread t(generate_from_words_proc, clone, i);
                 t.detach();
-            } catch (std::system_error& e) {
+            } catch (std::system_error&) {
                 delete clone;
                 s_count++;
             }
         }
 
-#if defined(_WIN32)
-        ::SetThreadPriority(::GetCurrentThread(), THREAD_PRIORITY_BELOW_NORMAL);
-#endif
-
-        for (size_t i = 0; i < RETRY_COUNT; ++i) {
-            if (s_generated || s_canceled)
-                break;
-            std::this_thread::sleep_for(std::chrono::milliseconds(INTERVAL));
-        }
-
-        if (!s_generated)
-            s_canceled = true;
-
-        for (size_t i = 0; i < RETRY_COUNT; ++i) {
-            if (s_count >= num_threads)
-                break;
-            std::this_thread::sleep_for(std::chrono::milliseconds(INTERVAL));
-        }
-
-#if defined(_WIN32)
-        ::SetThreadPriority(::GetCurrentThread(), THREAD_PRIORITY_NORMAL);
-#endif
-
         return s_generated;
     }
 };
-
-template <typename t_char>
-inline bool
-check_connectivity(const std::unordered_set<std::basic_string<t_char> >& words,
-                   std::basic_string<t_char>& nonconnected)
-{
-    typedef std::basic_string<t_char> t_string;
-    if (words.size() <= 1)
-        return true;
-
-    std::vector<t_string> vec_words(words.begin(), words.end());
-    std::queue<size_t> queue;
-    std::unordered_set<size_t> indexes;
-    queue.emplace(0);
-
-    while (!queue.empty()) {
-        size_t index0 = queue.front();
-        indexes.insert(index0);
-        queue.pop();
-
-        auto& w0 = vec_words[index0];
-        for (size_t index1 = 0; index1 < vec_words.size(); ++index1) {
-            if (index0 == index1)
-                continue;
-
-            auto& w1 = vec_words[index1];
-            for (auto ch0 : w0) {
-                for (auto ch1 : w1) {
-                    if (ch0 == ch1) {
-                        if (indexes.count(index1) == 0) {
-                            queue.emplace(index1);
-                            goto skip;
-                        }
-                    }
-                }
-            }
-skip:;
-        }
-    }
-
-    for (size_t i = 0; i < vec_words.size(); ++i) {
-        if (indexes.count(i) == 0) {
-            nonconnected = vec_words[i];
-            return false;
-        }
-    }
-
-    return true;
-}
 
 } // namespace crossword_generation
