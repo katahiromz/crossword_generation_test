@@ -826,15 +826,6 @@ struct generation_t {
         if (words.empty())
             return false;
 
-        for (auto& word : m_words) {
-            if (word.size() <= 1) {
-                words.erase(word);
-            }
-        }
-
-        if (words.empty())
-            return false;
-
         auto word = *words.begin();
         candidate_t<t_char> cand = { 0, 0, false, word };
         apply_candidate(cand);
