@@ -87,7 +87,7 @@ int main(int argc, char **argv) {
     //typedef wchar_t xchar_t;
 
     using namespace crossword_generation;
-    board_t<xchar_t>::unittest();
+    board_t<xchar_t, false>::unittest();
 
     if (argc > 1) {
         s_words.clear();
@@ -102,11 +102,11 @@ int main(int argc, char **argv) {
         if (!check_connectivity<xchar_t>(s_words, nonconnected)) {
             std::printf("check_connectivity failed: %s\n\n", nonconnected.c_str());
         } else {
-            generation_t<xchar_t>::generate_from_words(s_words);
-            if (generation_t<xchar_t>::s_generated) {
-                generation_t<xchar_t>::s_mutex.lock();
-                generation_t<xchar_t>::s_solution.print();
-                generation_t<xchar_t>::s_mutex.unlock();
+            generation_t<xchar_t, false>::generate_from_words(s_words);
+            if (generation_t<xchar_t, false>::s_generated) {
+                generation_t<xchar_t, false>::s_mutex.lock();
+                generation_t<xchar_t, false>::s_solution.print();
+                generation_t<xchar_t, false>::s_mutex.unlock();
             } else {
                 std::printf("failed\n");
             }
