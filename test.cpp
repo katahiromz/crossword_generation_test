@@ -102,8 +102,9 @@ int main(int argc, char **argv) {
         if (!check_connectivity<xchar_t>(s_words, nonconnected)) {
             std::printf("check_connectivity failed: %s\n\n", nonconnected.c_str());
         } else {
+            reset();
             generation_t<xchar_t, false>::do_generate_from_words(s_words);
-            if (generation_t<xchar_t, false>::s_generated) {
+            if (s_generated) {
                 generation_t<xchar_t, false>::s_mutex.lock();
                 generation_t<xchar_t, false>::s_solution.print();
                 generation_t<xchar_t, false>::s_mutex.unlock();
