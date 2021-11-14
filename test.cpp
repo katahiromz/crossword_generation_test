@@ -88,7 +88,7 @@ void do_test1(void) {
     } else {
         reset();
         generation_t<char, false>::do_generate_from_words(s_words);
-        wait_for_threads();
+        wait_for_threads(1);
         if (s_generated) {
             s_mutex.lock();
             generation_t<char, false>::s_solution.print();

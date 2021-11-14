@@ -668,6 +668,11 @@ struct generation_t {
         }
 
         for (auto& word : m_words) {
+            if (s_canceled) {
+                cands.clear();
+                return cands;
+            }
+
             for (size_t ich = 0; ich < word.size(); ++ich) {
                 if (word[ich] != ch0)
                     continue;
@@ -717,6 +722,11 @@ struct generation_t {
         }
 
         for (auto& word : m_words) {
+            if (s_canceled) {
+                cands.clear();
+                return cands;
+            }
+
             for (size_t ich = 0; ich < word.size(); ++ich) {
                 if (word[ich] != ch0)
                     continue;
@@ -755,18 +765,24 @@ struct generation_t {
         std::vector<candidate_t<t_char> > cands;
         std::unordered_set<pos_t> positions;
         for (auto& cand : candidates) {
+            if (s_canceled)
+                return false;
             if (cand.m_word.size() == 1) {
                 cands.push_back(cand);
                 positions.insert( {cand.m_x, cand.m_y} );
             }
         }
         for (auto& cand : candidates) {
+            if (s_canceled)
+                return false;
             if (cand.m_word.size() != 1) {
                 if (positions.count(pos_t(cand.m_x, cand.m_y)) == 0)
                     return false;
             }
         }
         for (auto& cand : cands) {
+            if (s_canceled)
+                return false;
             apply_candidate(cand);
         }
         return true;
@@ -789,6 +805,8 @@ struct generation_t {
         std::vector<candidate_t<t_char> > candidates;
 
         for (auto& cross : m_crossable_x) {
+            if (s_canceled)
+                return s_generated;
             auto cands = get_candidates_x(cross.m_x, cross.m_y);
             if (cands.empty()) {
                 if (m_board.must_be_cross(cross.m_x, cross.m_y))
@@ -802,6 +820,8 @@ struct generation_t {
         }
 
         for (auto& cross : m_crossable_y) {
+            if (s_canceled)
+                return s_generated;
             auto cands = get_candidates_y(cross.m_x, cross.m_y);
             if (cands.empty()) {
                 if (m_board.must_be_cross(cross.m_x, cross.m_y))
@@ -829,7 +849,25 @@ struct generation_t {
             return s_generated;
         }
 
+#ifdef XWORDGIVER
+        if (m_words.size() < m_dict.size() / 2 && !t_fixed) {
+            std::sort(candidates.begin(), candidates.end(),
+                [&](const candidate_t<t_char>& cand0, const candidate_t<t_char>& cand1) {
+                    board_t<t_char, false> board0 = m_board;
+                    board0.apply_size(cand0);
+                    board_t<t_char, false> board1 = m_board;
+                    board1.apply_size(cand1);
+                    int cxy0 = (board0.m_cx + board0.m_cy) + std::abs(board0.m_cy - board0.m_cx) / 4;
+                    int cxy1 = (board1.m_cx + board1.m_cy) + std::abs(board1.m_cy - board1.m_cx) / 4;
+                    return cxy0 < cxy1;
+                }
+            );
+        } else {
+            crossword_generation::random_shuffle(candidates.begin(), candidates.end());
+        }
+#else
         crossword_generation::random_shuffle(candidates.begin(), candidates.end());
+#endif
 
         for (auto& cand : candidates) {
             if (s_canceled)
