@@ -87,11 +87,11 @@ void do_test1(void) {
         std::printf("check_connectivity failed: %s\n\n", nonconnected.c_str());
     } else {
         reset();
-        generation_t<char, false>::do_generate_from_words(s_words);
+        from_words_t<char, false>::do_generate(s_words);
         wait_for_threads(1);
         if (s_generated) {
             s_mutex.lock();
-            generation_t<char, false>::s_solution.print();
+            from_words_t<char, false>::s_solution.print();
             s_mutex.unlock();
         } else {
             std::printf("failed\n");
