@@ -99,6 +99,37 @@ void do_test1(void) {
     }
 }
 
+#if 0
+void do_test2(void) {
+    using namespace crossword_generation;
+    reset();
+
+    board_t<char, true> board(10, 10, '?');
+    board.m_data =
+"????#???#?"
+"#?#????#??"
+"???#?#????"
+"?#????#???"
+"??#?#??#?#"
+"?????#????"
+"#?#?????#?"
+"???#??#??#"
+"????#??#??"
+"?#???#??#?";
+
+    reset();
+    non_add_block_t<char>::do_generate(board, s_words);
+    wait_for_threads(10);
+    if (s_generated) {
+        s_mutex.lock();
+        non_add_block_t<char>::s_solution.print();
+        s_mutex.unlock();
+    } else {
+        std::printf("failed\n");
+    }
+}
+#endif
+
 int main(int argc, char **argv) {
     std::srand(::GetTickCount() ^ ::GetCurrentThreadId());
 
@@ -119,7 +150,11 @@ int main(int argc, char **argv) {
     }
 
     auto t0 = std::time(NULL);
+#if 1
     do_test1();
+#else
+    do_test2();
+#endif
     auto t1 = std::time(NULL);
     printf("%u\n", int(t1 - t0));
 
