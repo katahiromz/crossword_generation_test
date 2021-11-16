@@ -1,5 +1,7 @@
 #include "crossword_generation.hpp"
 
+//#define SINGLETHREADDEBUG
+
 std::unordered_set<std::string> s_words = {
 "ABBREVIATION",
 "ABDOMEN",
