@@ -1,6 +1,7 @@
-#include "crossword_generation.hpp"
-
 //#define SINGLETHREADDEBUG
+//#define NO_RANDOM
+
+#include "crossword_generation.hpp"
 
 std::unordered_set<std::string> s_words = {
 "ABBREVIATION",
@@ -106,28 +107,28 @@ void do_test2(void) {
     using namespace crossword_generation;
     reset();
 
-    board_t<char, true> board(10, 10, '?');
+    board_t<char, true> board(6, 6, '?');
     board.m_data =
-"????#???#?"
-"#?#????#??"
-"???#?#????"
-"?#????#???"
-"??#?#??#?#"
-"?????#????"
-"#?#?????#?"
-"???#??#??#"
-"????#??#??"
-"?#???#??#?";
+"??#?#?"
+"#?????"
+"?#??#?"
+"??#??#"
+"???#??"
+"?#????";
 
-    reset();
-    non_add_block_t<char>::do_generate(board, s_words);
-    wait_for_threads(10);
-    if (s_generated) {
-        s_mutex.lock();
-        non_add_block_t<char>::s_solution.print();
-        s_mutex.unlock();
-    } else {
-        std::printf("failed\n");
+    for (int i = 0; i < 10; ++i) {
+        reset();
+        non_add_block_t<char>::do_generate(board, s_words);
+        Sleep(3000);
+        if (s_generated) {
+            s_mutex.lock();
+            non_add_block_t<char>::s_solution.print();
+            s_mutex.unlock();
+            break;
+        }
+        else {
+            std::printf("failed\n");
+        }
     }
 }
 #endif
