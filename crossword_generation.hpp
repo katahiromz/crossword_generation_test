@@ -1,6 +1,6 @@
 #pragma once
 
-#define CROSSWORD_GENERATION 18 // crossword_generation version
+#define CROSSWORD_GENERATION 19 // crossword_generation version
 
 #define _GNU_SOURCE
 #include <cstdio>
@@ -336,13 +336,16 @@ struct board_t : board_data_t<t_char> {
 
         int x0, x1;
         x0 = x1 = x;
-        while (get_at(x0 - 1, y) != '#')
+        while (get_at(x0 - 1, y) != '#') {
             --x0;
-        while (get_at(x1 + 1, y) != '#')
+        }
+        while (get_at(x1 + 1, y) != '#') {
             ++x1;
+        }
 
-        for (int x2 = x0; x2 <= x1; ++x2)
+        for (int x2 = x0; x2 <= x1; ++x2) {
             pat += get_at(x2, y);
+        }
         if (px0)
             *px0 = x0;
         return pat;
@@ -355,13 +358,16 @@ struct board_t : board_data_t<t_char> {
 
         int y0, y1;
         y0 = y1 = y;
-        while (get_at(x, y0 - 1) != '#')
+        while (get_at(x, y0 - 1) != '#') {
             --y0;
-        while (get_at(x, y1 + 1) != '#')
+        }
+        while (get_at(x, y1 + 1) != '#') {
             ++y1;
+        }
 
-        for (int y2 = y0; y2 <= y1; ++y2)
+        for (int y2 = y0; y2 <= y1; ++y2) {
             pat += get_at(x, y2);
+        }
         if (py0)
             *py0 = y0;
         return pat;
@@ -1435,7 +1441,7 @@ struct from_words_t {
         }
 
 #ifdef XWORDGIVER
-        if (m_words.size() < m_dict.size() / 2 && !t_fixed) {
+        if (m_words.size() <= 100 && m_words.size() < m_dict.size() / 2 && !t_fixed) {
             std::sort(candidates.begin(), candidates.end(),
                 [&](const candidate_t<t_char>& cand0, const candidate_t<t_char>& cand1) {
                     board_t<t_char, false> board0 = m_board;
