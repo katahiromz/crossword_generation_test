@@ -1,6 +1,6 @@
 #pragma once
 
-#define CROSSWORD_GENERATION 21 // crossword_generation version
+#define CROSSWORD_GENERATION 22 // crossword_generation version
 
 #define _GNU_SOURCE
 #include <cstdio>
@@ -1805,21 +1805,21 @@ struct non_add_block_t {
     }
 
     static bool
-    generate_proc(const board_t<t_char, t_fixed> *pboard,
-                  const std::unordered_set<t_string> *pwords, int iThread)
+    generate_proc(board_t<t_char, t_fixed> *pboard,
+                  std::unordered_set<t_string> *pwords, int iThread)
     {
         std::srand(uint32_t(::GetTickCount64()) ^ ::GetCurrentThreadId());
 #ifdef _WIN32
-        ::SetThreadPriority(::GetCurrentThread(), THREAD_PRIORITY_ABOVE_NORMAL);
+        //::SetThreadPriority(::GetCurrentThread(), THREAD_PRIORITY_ABOVE_NORMAL);
 #endif
         non_add_block_t<t_char> data;
         data.m_iThread = iThread;
-        data.m_board = *pboard;
-        data.m_words = data.m_dict = *pwords;
-        bool flag = data.generate();
+        data.m_board = std::move(*pboard);
         delete pboard;
+        data.m_words = *pwords;
+        data.m_dict = std::move(*pwords);
         delete pwords;
-        return flag;
+        return data.generate();
     }
 
     static bool

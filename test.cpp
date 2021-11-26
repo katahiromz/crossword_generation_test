@@ -3,56 +3,7 @@
 
 #include "crossword_generation.hpp"
 
-std::unordered_set<std::string> s_words = {
-"ABBREVIATION",
-"ABDOMEN",
-"ABILITY",
-"ABOLITION",
-"ABSENCE",
-"ABUSE",
-"ACADEMY",
-"ACCELERATOR",
-"ACCENT",
-"ACCEPTANCE",
-"ACCESS",
-"ACCESSIBILITY",
-"ACCESSORIES",
-"ACCESSORY",
-"ACCIDENT",
-"ACCOMMODATION",
-"ACCOMPLISHMENT",
-"ACCORD",
-"ACCORDION",
-"ACCOUNT",
-"ACCOUNTANT",
-"ACCOUNTS",
-"ACCURACY",
-"ACHIEVEMENT",
-"ACID",
-"ACKNOWLEDGMENTS",
-"ACQUAINTANCE",
-"ACRE",
-"ACRES",
-"USING",
-"WHICH",
-"SUPPORT",
-"INTEGRATED",
-"CMAKE",
-"HOW",
-"CAN",
-"TARGET",
-"WITHOUT",
-"WRITING",
-"FLAGS",
-"FOR",
-"EACH",
-"SPECIFIC",
-"COMPILERS",
-"CURRENT",
-"GLOBAL",
-"SETTING",
-"WORK",
-};
+std::unordered_set<std::string> s_words;
 
 template <typename T_CHAR>
 inline void mstr_trim(std::basic_string<T_CHAR>& str, const T_CHAR *spaces)
@@ -109,17 +60,17 @@ void do_test2(void) {
 
     board_t<char, true> board(6, 6, '?');
     board.m_data =
-"??#?#?"
-"#?????"
-"?#??#?"
-"??#??#"
-"???#??"
-"?#????";
+"?????#"
+"?#?#?#"
+"?#????"
+"????#?"
+"#?#?#?"
+"#?????";
 
     for (int i = 0; i < 5; ++i) {
         reset();
         non_add_block_t<char>::do_generate(board, s_words);
-        Sleep(5000);
+        wait_for_threads(1, 10);
         if (s_generated) {
             s_mutex.lock();
             non_add_block_t<char>::s_solution.print();
@@ -144,11 +95,20 @@ int main(int argc, char **argv) {
         if (argc == 2) {
             if (!load_dict(argv[1], s_words)) {
                 std::fprintf(stderr, "ERROR: cannot load file '%s'\n", argv[1]);
+                return EXIT_FAILURE;
             }
         } else {
             for (int iarg = 1; iarg < argc; ++iarg) {
                 s_words.insert(argv[iarg]);
             }
+        }
+    }
+
+    if (s_words.empty()) {
+        auto name = "dict.txt";
+        if (!load_dict(name, s_words)) {
+            std::fprintf(stderr, "ERROR: cannot load file '%s'\n", name );
+            return EXIT_FAILURE;
         }
     }
 
