@@ -1796,6 +1796,7 @@ struct non_add_block_t {
                         if (copy.generate_recurse())
                             return true;
                     }
+                    x += int(pat.size());
                 }
             }
         }
