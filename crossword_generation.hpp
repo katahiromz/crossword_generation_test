@@ -1,6 +1,6 @@
 #pragma once
 
-#define CROSSWORD_GENERATION 22 // crossword_generation version
+#define CROSSWORD_GENERATION 23 // crossword_generation version
 
 #define _GNU_SOURCE
 #include <cstdio>
@@ -1555,10 +1555,10 @@ struct from_words_t {
 #endif
         from_words_t<t_char, t_fixed> data;
         data.m_iThread = iThread;
-        data.m_words = data.m_dict = *words;
-        bool flag = data.generate();
+        data.m_words = *words;
+        data.m_dict = std::move(*words);
         delete words;
-        return flag;
+        return data.generate();
     }
 
     static bool
